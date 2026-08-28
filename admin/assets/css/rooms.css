@@ -1,0 +1,105 @@
+.search-wrap {
+    position: relative;
+    max-width: 480px;
+}
+
+.search-wrap input[type="text"] {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+}
+
+.search-wrap input[type="text"]:focus {
+    outline: none;
+    border-color: #4a6cf7;
+}
+
+.search-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e2e4e9;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 20;
+}
+
+.search-dropdown.active {
+    display: block;
+}
+
+.search-dropdown-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-bottom: 1px solid #f2f2f2;
+}
+
+.search-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.search-dropdown-item:hover {
+    background: #f5f7ff;
+}
+
+.search-dropdown-item strong {
+    font-size: 14px;
+    color: #222;
+}
+
+.search-dropdown-item span {
+    font-size: 12px;
+    color: #888;
+}
+
+.search-dropdown-empty {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #999;
+}
+
+.property-summary-card p {
+    margin-top: 8px;
+}
+
+.property-summary-card .badge {
+    display: inline-block;
+    margin-right: 8px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: #f0f1f5;
+    color: #444;
+    font-size: 12px;
+}
+
+.room-preview img {
+    width: 90px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin: 6px 6px 0 0;
+    border: 1px solid #ddd;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #888;
+}
+
+.empty-state i {
+    font-size: 40px;
+    margin-bottom: 12px;
+    color: #ccc;
+}
