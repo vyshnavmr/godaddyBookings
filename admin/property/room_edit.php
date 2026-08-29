@@ -95,7 +95,7 @@ $galleryImages = [];
 
 if (!$accessDenied) {
 
-    $sql = "SELECT * FROM property_room_images WHERE room_id=? ORDER BY is_cover DESC, display_order ASC";
+    $sql = "SELECT * FROM property_room_images WHERE room_id=? ORDER BY is_cover DESC, id ASC";
 
     $stmt = mysqli_prepare($conn, $sql);
 

@@ -198,3 +198,90 @@ navLinks.forEach(link=>{
 });
 
 console.log("Godaddy Booking Loaded Successfully");
+
+
+
+
+
+
+/* ==========================================
+   PROPERTY DETAILS - GALLERY THUMBNAILS
+========================================== */
+
+const pdMainImage = document.getElementById("pdMainImage");
+
+const pdThumbs = document.querySelectorAll(".pd-thumb");
+
+if (pdMainImage && pdThumbs.length > 0) {
+
+    pdThumbs.forEach(function (thumb) {
+
+        thumb.addEventListener("click", function () {
+
+            pdMainImage.src = this.dataset.full;
+
+            pdThumbs.forEach(function (t) {
+                t.classList.remove("active");
+            });
+
+            this.classList.add("active");
+
+        });
+
+    });
+
+}
+
+
+/* ==========================================
+   PROPERTY DETAILS - ROOM SELECTION
+========================================== */
+
+const pdRoomRadios = document.querySelectorAll(".pd-room-radio");
+
+const pdBookingAmount = document.querySelector(".pd-booking-amount");
+const pdBookingFrom = document.querySelector(".pd-booking-from");
+
+function updateSelectedRoomCard() {
+
+    pdRoomRadios.forEach(function (radio) {
+
+        const card = radio.closest(".pd-room-card");
+
+        if (radio.checked) {
+
+            card.classList.add("selected");
+
+            if (pdBookingAmount) {
+
+                const price = parseFloat(radio.dataset.price) || 0;
+
+                pdBookingAmount.textContent = "₹" + price.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+
+                if (pdBookingFrom) {
+                    pdBookingFrom.textContent = "Selected Room";
+                }
+
+            }
+
+        } else {
+
+            card.classList.remove("selected");
+
+        }
+
+    });
+
+}
+
+if (pdRoomRadios.length > 0) {
+
+    pdRoomRadios.forEach(function (radio) {
+        radio.addEventListener("change", updateSelectedRoomCard);
+    });
+
+    /* Reflect whichever room is checked by default on page load */
+
+    updateSelectedRoomCard();
+
+}

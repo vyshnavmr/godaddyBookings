@@ -323,8 +323,8 @@ try {
 
     $cover_path = $room_relative_dir . "/" . $cover_name;
 
-    $sql = "INSERT INTO property_room_images(room_id, image_path, is_cover, display_order)
-            VALUES(?,?,1,1)";
+    $sql = "INSERT INTO property_room_images(room_id, image_path, is_cover)
+            VALUES(?,?,1)";
 
     $stmt = mysqli_prepare($conn, $sql);
 
@@ -364,12 +364,12 @@ try {
 
                 $gallery_path = $room_relative_dir . "/" . $gallery_name;
 
-                $sql = "INSERT INTO property_room_images(room_id, image_path, is_cover, display_order)
-                        VALUES(?,?,0,?)";
+                $sql = "INSERT INTO property_room_images(room_id, image_path, is_cover)
+                        VALUES(?,?,0)";
 
                 $stmt = mysqli_prepare($conn, $sql);
 
-                mysqli_stmt_bind_param($stmt, "isi", $room_id, $gallery_path, $order);
+                mysqli_stmt_bind_param($stmt, "is", $room_id, $gallery_path);
 
                 mysqli_stmt_execute($stmt);
 
