@@ -1,0 +1,605 @@
+/* ===========================================================
+   ROOM DETAILS PAGE
+=========================================================== */
+
+.rd-page{
+
+    padding:50px 0 100px;
+
+}
+
+.rd-back-link{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    color:var(--ink-soft);
+
+    font-size:14px;
+
+    font-weight:600;
+
+    margin-bottom:24px;
+
+}
+
+.rd-back-link:hover{
+
+    color:var(--red);
+
+}
+
+/* ===========================
+   GALLERY
+============================ */
+
+.rd-gallery{
+
+    margin-bottom:35px;
+
+}
+
+.rd-gallery-main{
+
+    position:relative;
+
+    width:100%;
+
+    height:610px;
+
+    border-radius:var(--radius-lg);
+
+    overflow:hidden;
+
+    background:var(--sand);
+
+}
+
+.rd-gallery-main img{
+
+    width:100%;
+
+    height:100%;
+
+    object-fit:cover;
+
+    display:block;
+
+}
+
+.rd-discount-badge{
+
+    position:absolute;
+
+    top:20px;
+
+    left:20px;
+
+    background:var(--red-soft);
+
+    color:var(--red-dark);
+
+    padding:8px 16px;
+
+    border-radius:30px;
+
+    font-size:14px;
+
+    font-weight:600;
+
+}
+
+.rd-gallery-thumbs{
+
+    display:flex;
+
+    gap:12px;
+
+    margin-top:12px;
+
+    overflow-x:auto;
+
+    padding-bottom:4px;
+
+}
+
+.rd-thumb{
+
+    width:90px;
+
+    height:70px;
+
+    object-fit:cover;
+
+    border-radius:8px;
+
+    cursor:pointer;
+
+    border:2px solid transparent;
+
+    opacity:.65;
+
+    flex-shrink:0;
+
+    transition:.2s;
+
+}
+
+.rd-thumb:hover{
+
+    opacity:1;
+
+}
+
+.rd-thumb.active{
+
+    border-color:var(--red);
+
+    opacity:1;
+
+}
+
+/* ===========================
+   LAYOUT
+============================ */
+
+.rd-layout{
+
+    display:grid;
+
+    grid-template-columns:2fr 1fr;
+
+    gap:40px;
+
+    align-items:start;
+
+}
+
+/* ===========================
+   HEADER
+============================ */
+
+.rd-header{
+
+    margin-bottom:10px;
+
+}
+
+.rd-header h1{
+
+    font-family:'Fraunces',serif;
+
+    font-size:32px;
+
+    font-weight:600;
+
+    color:var(--ink);
+
+    margin-bottom:10px;
+
+}
+
+.rd-property-link{
+
+    color:var(--ink-soft);
+
+    font-size:15px;
+
+    margin-bottom:14px;
+
+}
+
+.rd-property-link a{
+
+    color:var(--red);
+
+    font-weight:600;
+
+}
+
+.rd-badges{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:10px;
+
+    margin-bottom:10px;
+
+}
+
+.rd-badges .badge{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    padding:6px 14px;
+
+    border-radius:30px;
+
+    background:var(--sand);
+
+    color:var(--ink);
+
+    font-size:13px;
+
+    font-weight:500;
+
+}
+
+/* ===========================
+   CONTENT SECTIONS
+============================ */
+
+.rd-section{
+
+    margin-top:35px;
+
+    padding-top:35px;
+
+    border-top:1px solid var(--line);
+
+}
+
+.rd-section h2{
+
+    font-family:'Fraunces',serif;
+
+    font-size:22px;
+
+    font-weight:600;
+
+    color:var(--ink);
+
+    margin-bottom:16px;
+
+}
+
+.rd-description{
+
+    color:var(--ink-soft);
+
+    line-height:1.8;
+
+    font-size:15px;
+
+}
+
+/* ===========================
+   ROOM SWITCHER
+============================ */
+
+.rd-switcher{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+
+    gap:16px;
+
+}
+
+.rd-switch-card{
+
+    position:relative;
+
+    display:flex;
+
+    flex-direction:column;
+
+    border:1px solid var(--line);
+
+    border-radius:var(--radius-md);
+
+    overflow:hidden;
+
+    background:var(--white);
+
+    transition:.2s;
+
+}
+
+.rd-switch-card:hover{
+
+    box-shadow:var(--shadow-sm);
+
+}
+
+.rd-switch-card.active{
+
+    border-color:var(--red);
+
+    box-shadow:0 0 0 3px var(--red-soft);
+
+}
+
+.rd-switch-card img{
+
+    width:100%;
+
+    height:110px;
+
+    object-fit:cover;
+
+}
+
+.rd-switch-info{
+
+    padding:12px 14px;
+
+}
+
+.rd-switch-info h4{
+
+    font-family:'Fraunces',serif;
+
+    font-size:15px;
+
+    font-weight:600;
+
+    color:var(--ink);
+
+    margin-bottom:4px;
+
+}
+
+.rd-switch-price{
+
+    font-size:13px;
+
+    color:var(--ink-soft);
+
+}
+
+.rd-switch-current{
+
+    position:absolute;
+
+    top:10px;
+
+    right:10px;
+
+    background:var(--red);
+
+    color:#fff;
+
+    font-size:11px;
+
+    font-weight:600;
+
+    padding:4px 10px;
+
+    border-radius:20px;
+
+    text-transform:uppercase;
+
+    letter-spacing:.04em;
+
+}
+
+/* ===========================
+   BOOKING SIDEBAR
+============================ */
+
+.rd-sidebar{
+
+    position:sticky;
+
+    top:20px;
+
+}
+
+.rd-booking-box{
+
+    background:var(--white);
+
+    border:1px solid var(--line);
+
+    border-radius:var(--radius-lg);
+
+    padding:26px;
+
+    box-shadow:var(--shadow-md);
+
+}
+
+.rd-booking-price{
+
+    display:flex;
+
+    align-items:baseline;
+
+    gap:8px;
+
+    margin-bottom:22px;
+
+    flex-wrap:wrap;
+
+}
+
+.rd-booking-price .price-original{
+
+    font-size:14px;
+
+}
+
+.rd-booking-price .price-final{
+
+    font-family:'Fraunces',serif;
+
+    font-size:28px;
+
+    font-weight:600;
+
+    color:var(--ink);
+
+}
+
+.rd-booking-price .price-unit{
+
+    font-size:13px;
+
+    color:var(--ink-soft);
+
+}
+
+.rd-booking-field{
+
+    margin-bottom:16px;
+
+}
+
+.rd-booking-field label{
+
+    display:block;
+
+    font-size:12px;
+
+    font-weight:600;
+
+    color:var(--ink);
+
+    margin-bottom:6px;
+
+    text-transform:uppercase;
+
+    letter-spacing:.04em;
+
+}
+
+.rd-booking-field input,
+
+.rd-booking-field select{
+
+    width:100%;
+
+    padding:12px 14px;
+
+    border:1px solid var(--line);
+
+    border-radius:8px;
+
+    font-size:14px;
+
+    font-family:'Inter',sans-serif;
+
+    color:var(--ink);
+
+    outline:none;
+
+}
+
+.rd-booking-field input:focus,
+
+.rd-booking-field select:focus{
+
+    border-color:var(--red);
+
+}
+
+.rd-book-btn{
+
+    width:100%;
+
+    padding:15px;
+
+    background:var(--red);
+
+    color:#fff;
+
+    border:none;
+
+    border-radius:8px;
+
+    font-size:15px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+.rd-book-btn:hover{
+
+    background:var(--red-dark);
+
+}
+
+.rd-booking-note{
+
+    text-align:center;
+
+    font-size:12px;
+
+    color:var(--ink-soft);
+
+    margin-top:12px;
+
+}
+
+/* ===========================
+   RESPONSIVE
+============================ */
+
+@media(max-width:992px){
+
+    .rd-layout{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .rd-sidebar{
+
+        position:static;
+
+    }
+
+    .rd-gallery-main{
+
+        height:320px;
+
+    }
+
+}
+
+@media(max-width:768px){
+
+    .rd-page{
+
+        padding:30px 0 70px;
+
+    }
+
+}
+
+@media(max-width:500px){
+
+    .rd-header h1{
+
+        font-size:26px;
+
+    }
+
+    .rd-gallery-main{
+
+        height:240px;
+
+    }
+
+    .rd-switcher{
+
+        grid-template-columns:1fr;
+
+    }
+
+}

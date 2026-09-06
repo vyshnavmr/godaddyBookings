@@ -613,6 +613,8 @@ while ($row = mysqli_fetch_assoc($imagesResult)) {
                             value="<?= $amenity['id']; ?>"
                             <?= in_array($amenity['id'], $selectedAmenities) ? 'checked' : ''; ?>>
 
+                        <i class="<?= htmlspecialchars($amenity['icon'] ?: 'fa-solid fa-circle-check'); ?>"></i>
+
                         <?= htmlspecialchars($amenity['amenity_name']); ?>
 
                     </label>

@@ -285,3 +285,33 @@ if (pdRoomRadios.length > 0) {
     updateSelectedRoomCard();
 
 }
+
+
+
+/* ==========================================
+   ROOM DETAILS - GALLERY THUMBNAILS
+========================================== */
+
+const rdMainImage = document.getElementById("rdMainImage");
+
+const rdThumbs = document.querySelectorAll(".rd-thumb");
+
+if (rdMainImage && rdThumbs.length > 0) {
+
+    rdThumbs.forEach(function (thumb) {
+
+        thumb.addEventListener("click", function () {
+
+            rdMainImage.src = this.dataset.full;
+
+            rdThumbs.forEach(function (t) {
+                t.classList.remove("active");
+            });
+
+            this.classList.add("active");
+
+        });
+
+    });
+
+}

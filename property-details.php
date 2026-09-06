@@ -168,6 +168,8 @@ $pageTitle = htmlspecialchars($property['title']) . " - Godaddy Booking";
 
 $currentPage = "properties";
 
+$pageCss = "assets/css/property-details.css";
+
 include "includes/header.php";
 
 ?>
@@ -313,7 +315,7 @@ include "includes/header.php";
 
                                 <div class="pd-amenity">
 
-                                    <i class="fa-solid fa-circle-check"></i>
+                                    <i class="<?= htmlspecialchars($amenity['icon'] ?: 'fa-solid fa-circle-check'); ?>"></i>
 
                                     <?= htmlspecialchars($amenity['amenity_name']); ?>
 
@@ -361,59 +363,67 @@ include "includes/header.php";
 
                                     ?>
 
-                                    <label class="pd-room-card">
+                                    <div class="pd-room-item">
 
-                                        <input
-                                            type="radio"
-                                            name="room_id"
-                                            value="<?= $room['id']; ?>"
-                                            class="pd-room-radio"
-                                            data-price="<?= $roomFinalPrice; ?>"
-                                            <?= $index === 0 ? 'checked' : ''; ?>>
+                                        <label class="pd-room-card">
 
-                                        <img class="pd-room-image" src="<?= htmlspecialchars($roomImage); ?>" alt="<?= htmlspecialchars($room['room_name']); ?>">
+                                            <input
+                                                type="radio"
+                                                name="room_id"
+                                                value="<?= $room['id']; ?>"
+                                                class="pd-room-radio"
+                                                data-price="<?= $roomFinalPrice; ?>"
+                                                <?= $index === 0 ? 'checked' : ''; ?>>
 
-                                        <div class="pd-room-info">
+                                            <img class="pd-room-image" src="<?= htmlspecialchars($roomImage); ?>" alt="<?= htmlspecialchars($room['room_name']); ?>">
 
-                                            <h3><?= htmlspecialchars($room['room_name']); ?></h3>
+                                            <div class="pd-room-info">
 
-                                            <?php if (!empty($room['description'])) { ?>
+                                                <h3><?= htmlspecialchars($room['room_name']); ?></h3>
 
-                                                <p class="pd-room-desc"><?= nl2br(htmlspecialchars($room['description'])); ?></p>
+                                                <?php if (!empty($room['description'])) { ?>
 
-                                            <?php } ?>
+                                                    <p class="pd-room-desc"><?= nl2br(htmlspecialchars($room['description'])); ?></p>
 
-                                            <div class="pd-room-meta">
+                                                <?php } ?>
 
-                                                <span><i class="fa-solid fa-user-group"></i> <?= (int)$room['max_guests']; ?> guests</span>
+                                                <div class="pd-room-meta">
 
-                                                <span><i class="fa-solid fa-bed"></i> <?= (int)$room['total_rooms']; ?> room<?= ((int)$room['total_rooms'] != 1) ? 's' : ''; ?> available</span>
+                                                    <span><i class="fa-solid fa-user-group"></i> <?= (int)$room['max_guests']; ?> guests</span>
+
+                                                </div>
 
                                             </div>
 
-                                        </div>
+                                            <div class="pd-room-price">
 
-                                        <div class="pd-room-price">
+                                                <?php if ($roomDiscount > 0) { ?>
 
-                                            <?php if ($roomDiscount > 0) { ?>
+                                                    <span class="price-original">₹<?= number_format($room['price'], 0); ?></span>
 
-                                                <span class="price-original">₹<?= number_format($room['price'], 0); ?></span>
+                                                <?php } ?>
 
-                                            <?php } ?>
+                                                <span class="price-final">₹<?= number_format($roomFinalPrice, 0); ?></span>
 
-                                            <span class="price-final">₹<?= number_format($roomFinalPrice, 0); ?></span>
+                                                <span class="price-unit">/ night</span>
 
-                                            <span class="price-unit">/ night</span>
+                                            </div>
 
-                                        </div>
+                                            <div class="pd-room-selected-check">
 
-                                        <div class="pd-room-selected-check">
+                                                <i class="fa-solid fa-circle-check"></i>
 
-                                            <i class="fa-solid fa-circle-check"></i>
+                                            </div>
 
-                                        </div>
+                                        </label>
 
-                                    </label>
+                                        <a href="room-details.php?id=<?= $room['id']; ?>" class="pd-room-view-link">
+
+                                            View Room Details <i class="fa-solid fa-arrow-right"></i>
+
+                                        </a>
+
+                                    </div>
 
                                 <?php } ?>
 

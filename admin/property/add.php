@@ -503,6 +503,8 @@ $amenityQuery = mysqli_query($conn, "SELECT * FROM amenities ORDER BY amenity_na
                             name="amenities[]"
                             value="<?= $amenity['id']; ?>">
 
+                        <i class="<?= htmlspecialchars($amenity['icon'] ?: 'fa-solid fa-circle-check'); ?>"></i>
+
                         <?= htmlspecialchars($amenity['amenity_name']); ?>
 
                     </label>

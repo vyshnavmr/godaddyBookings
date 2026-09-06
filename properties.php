@@ -124,9 +124,32 @@ if ($search != "") {
 
     $escaped = mysqli_real_escape_string($conn, $search);
 
-    $sql .= " AND (p.title LIKE '%$escaped%' OR d.destination_name LIKE '%$escaped%')";
+    $sql .= "
 
+    AND (
+
+        p.title LIKE '%$escaped%'
+
+        OR d.destination_name LIKE '%$escaped%'
+
+        OR p.address LIKE '%$escaped%'
+
+
+        OR t.type_name LIKE '%$escaped%'
+
+    )";
+        
 }
+        // OR p.place LIKE '%$escaped%'
+        
+        // OR p.district LIKE '%$escaped%'
+        
+        // OR p.landmark LIKE '%$escaped%'
+        
+        // OR p.state LIKE '%$escaped%'
+        
+
+
 
 switch ($sort) {
 

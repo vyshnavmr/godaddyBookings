@@ -101,6 +101,20 @@ include "includes/header.php";
 
 ?>
 
+<?php if (isset($_GET['booking_confirmed']) && $_GET['booking_confirmed'] == '1') { ?>
+
+    <div class="container" style="margin-top:30px;">
+
+        <div style="background:var(--red-soft); color:var(--red-dark); padding:18px 24px; border-radius:12px; text-align:center; font-weight:600;">
+
+            🎉 Your booking request has been received! We'll be in touch shortly to confirm the details.
+
+        </div>
+
+    </div>
+
+<?php } ?>
+
     <!-- ================= HERO ================= -->
 
     <section class="hero">
@@ -149,92 +163,92 @@ include "includes/header.php";
     </section>
     <!-- ================= FEATURED ================= -->
     <section class="properties" id="properties">
+        <div class="section-heading">
+            <div class="eyebrow">Featured Stays</div>
+            <h2>
+                Featured Properties
+            </h2>
+            <p>
+                Handpicked accommodations for your perfect vacation.
+            </p>
+        </div>
         <div class="container">
 
-            <div class="section-heading">
-                <div class="eyebrow">Featured Stays</div>
-                <h2>
-                    Featured Properties
-                </h2>
-                <p>
-                    Handpicked accommodations for your perfect vacation.
-                </p>
-            </div>
             <div class="property-grid">
-                
-                <?php if (empty($properties)) { ?>
-                
+
+            <?php if (empty($properties)) { ?>
+
                 <p style="text-align:center; grid-column:1/-1; color:#6b7280;">
                     No properties available right now. Check back soon.
                 </p>
-                
-                <?php } ?>
-                
-                <?php foreach ($properties as $property): ?>
-                    
-                    <?php
 
-            $image = !empty($property['cover_image'])
-            ? "assets/uploads/" . $property['cover_image']
-            : "https://picsum.photos/600/400?random=" . $property['id'];
+            <?php } ?>
 
-            $discountPercent = (float)($property['discount_percent'] ?? 0);
+            <?php foreach ($properties as $property): ?>
 
-            $finalPrice = $property['discounted_price'] ?? $property['price'];
+                <?php
 
-            ?>
+                $image = !empty($property['cover_image'])
+                    ? "assets/uploads/" . $property['cover_image']
+                    : "https://picsum.photos/600/400?random=" . $property['id'];
 
-            <div class="property-card">
-                
-                <div class="property-image-wrap">
-                    
-                    <img
-                    src="<?= htmlspecialchars($image); ?>"
-                    alt="<?= htmlspecialchars($property['title']); ?>">
-                    
-                    <?php if ($discountPercent > 0) { ?>
-                    
-                    <div class="discount-badge">
-                        
-                        <?= rtrim(rtrim(number_format($discountPercent, 2), '0'), '.'); ?>% OFF
-                        
-                    </div>
-                    
-                    <?php } ?>
-                    
-                </div>
-                
-                <div class="property-content">
-                    
-                    <h3>
-                        <?= htmlspecialchars($property['title']); ?>
-                    </h3>
-                    <p>
-                        📍 <?= htmlspecialchars($property['destination_name']); ?>
-                    </p>
-                    <div class="price">
-                        
+                $discountPercent = (float)($property['discount_percent'] ?? 0);
+
+                $finalPrice = $property['discounted_price'] ?? $property['price'];
+
+                ?>
+
+                <div class="property-card">
+
+                    <div class="property-image-wrap">
+
+                        <img
+                            src="<?= htmlspecialchars($image); ?>"
+                            alt="<?= htmlspecialchars($property['title']); ?>">
+
                         <?php if ($discountPercent > 0) { ?>
-                        
-                        <span class="price-original">₹<?= number_format($property['price'], 0); ?></span>
-                        
+
+                            <div class="discount-badge">
+
+                                <?= rtrim(rtrim(number_format($discountPercent, 2), '0'), '.'); ?>% OFF
+
+                            </div>
+
                         <?php } ?>
-                        
-                        <span class="price-final">₹<?= number_format($finalPrice, 0); ?></span>
-                        
-                        <span class="price-unit">/ Night</span>
-                        
+
                     </div>
-                    <a href="property-details.php?id=<?= $property['id']; ?>">
-                        <button>
-                            View Details
-                        </button>
-                    </a>
+
+                    <div class="property-content">
+
+                        <h3>
+                            <?= htmlspecialchars($property['title']); ?>
+                        </h3>
+                        <p>
+                            📍 <?= htmlspecialchars($property['destination_name']); ?>
+                        </p>
+                        <div class="price">
+
+                            <?php if ($discountPercent > 0) { ?>
+
+                                <span class="price-original">₹<?= number_format($property['price'], 0); ?></span>
+
+                            <?php } ?>
+
+                            <span class="price-final">₹<?= number_format($finalPrice, 0); ?></span>
+
+                            <span class="price-unit">/ Night</span>
+
+                        </div>
+                        <a href="property-details.php?id=<?= $property['id']; ?>">
+                            <button>
+                                View Details
+                            </button>
+                        </a>
+                    </div>
                 </div>
-            </div>
 
             <?php endforeach; ?>
-        </div>
+            </div>
         </div>
     </section>
 
