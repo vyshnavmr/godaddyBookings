@@ -27,6 +27,17 @@ if (isset($_SESSION['user_id'])) {
 
 
 /*====================================================
+CSRF TOKEN
+====================================================*/
+
+if (empty($_SESSION['csrf_token'])) {
+
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+
+}
+
+
+/*====================================================
 FLASH ERRORS FROM login-save.php
 ====================================================*/
 
@@ -92,6 +103,8 @@ include "includes/header.php";
                     <?php } ?>
 
                     <form action="login-save.php" method="POST">
+
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']); ?>">
 
                         <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirect); ?>">
 

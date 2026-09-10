@@ -56,7 +56,7 @@ if (mysqli_num_rows($result) === 0) {
 
     ORDER BY p.discount_percent DESC, RAND()
 
-    LIMIT 6
+    LIMIT 8
 
     ";
 
@@ -140,22 +140,26 @@ include "includes/header.php";
             <p>
                 Luxury Resorts • Villas • Homestays • Cottages
             </p>
+
             <div class="search-box" id="search-box">
                 <input
                     type="text"
+                    id="heroDestination"
                     placeholder="Destination">
                 <input
-                    type="date">
+                    type="date"
+                    id="heroCheckIn">
                 <input
-                    type="date">
-                <select>
-                    <option>Guests</option>
-                    <option>1 Guest</option>
-                    <option>2 Guests</option>
-                    <option>3 Guests</option>
-                    <option>4+ Guests</option>
+                    type="date"
+                    id="heroCheckOut">
+                <select id="heroGuests">
+                    <option value="">Guests</option>
+                    <option value="1">1 Guest</option>
+                    <option value="2">2 Guests</option>
+                    <option value="3">3 Guests</option>
+                    <option value="4">4+ Guests</option>
                 </select>
-                <button>
+                <button id="heroSearchBtn" type="button">
                     Search
                 </button>
             </div>

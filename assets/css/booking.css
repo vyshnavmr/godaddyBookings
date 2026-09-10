@@ -96,6 +96,24 @@
 
 }
 
+.bk-alert-info{
+
+    background:#fff4e0;
+
+    color:#8a5a00;
+
+}
+
+.bk-alert-info a{
+
+    color:#8a5a00;
+
+    font-weight:600;
+
+    word-break:break-all;
+
+}
+
 /* ===========================
    DETAILS CARD
 ============================ */
@@ -204,6 +222,49 @@
 
 }
 
+.bk-login-prompt.bk-no-border{
+
+    border-bottom:none;
+
+    padding-bottom:0;
+
+    margin-bottom:0;
+
+    margin-top:20px;
+
+    padding-top:20px;
+
+    border-top:1px solid var(--line);
+
+}
+
+/* ===========================
+   AUTH PAGES (login / forgot password)
+============================ */
+
+.bk-auth-wrap{
+
+    max-width:460px;
+
+    margin:0 auto;
+
+}
+
+.bk-forgot-link{
+    text-align:right;
+    margin:8px 0 20px;
+    font-size:13px;
+    line-height:1.4;
+}
+
+.bk-forgot-link a{
+
+    color:var(--red);
+
+    font-weight:600;
+
+}
+
 /* ===========================
    FORM
 ============================ */
@@ -220,18 +281,16 @@
 
 }
 
+.bk-form-group{
+    margin-bottom:20px;
+}
+
 .bk-form-group label{
-
     display:block;
-
     font-size:13px;
-
     font-weight:600;
-
     color:var(--ink);
-
-    margin-bottom:8px;
-
+    margin-bottom:10px;
 }
 
 .bk-form-group input{
@@ -567,47 +626,4 @@
         padding:20px;
 
     }
-}
-
-
-.bk-login-prompt.bk-no-border{
-
-    border-bottom:none;
-
-    padding-bottom:0;
-
-    margin-bottom:0;
-
-    margin-top:20px;
-
-    padding-top:20px;
-
-    border-top:1px solid var(--line);
-
-}
-
-.bk-auth-wrap{
-
-    max-width:460px;
-
-    margin:0 auto;
-
-}
-
-.bk-forgot-link{
-
-    text-align:right;
-
-    margin:-10px 0 20px;
-
-    font-size:13px;
-
-}
-
-.bk-forgot-link a{
-
-    color:var(--red);
-
-    font-weight:600;
-
 }

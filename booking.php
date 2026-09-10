@@ -18,6 +18,12 @@ $check_out = trim($_GET['check_out'] ?? "");
 
 $guests = (int)($_GET['guests'] ?? 1);
 
+$rooms = (int)($_GET['rooms'] ?? 1);
+
+if ($rooms < 1) {
+    $rooms = 1;
+}
+
 $errors = [];
 
 $formErrors = [];
@@ -138,11 +144,11 @@ $discountPercent = (float)($room['discount_percent'] ?? 0);
 
 $discountedRate = $room['discounted_price'] ?? $roomRate;
 
-$subtotal = $roomRate * $nights;
+$subtotal = $roomRate * $nights * $rooms;
 
-$discountAmount = $subtotal - ($discountedRate * $nights);
+$discountAmount = $subtotal - ($discountedRate * $nights * $rooms);
 
-$payableAmount = $discountedRate * $nights;
+$payableAmount = $discountedRate * $nights * $rooms;
 
 
 /*====================================================
@@ -259,6 +265,8 @@ include "includes/header.php";
 
                             <input type="hidden" name="guests" value="<?= $guests; ?>">
 
+                            <input type="hidden" name="rooms" value="<?= $rooms; ?>">
+
                             <div class="bk-form-row">
 
                                 <div class="bk-form-group">
@@ -353,7 +361,7 @@ include "includes/header.php";
 
                             <span class="bk-summary-divider">|</span>
 
-                            1 Room, <?= $guests; ?> Guest<?= $guests > 1 ? 's' : ''; ?>
+                            <?= $rooms; ?> Room<?= $rooms > 1 ? 's' : ''; ?>, <?= $guests; ?> Guest<?= $guests > 1 ? 's' : ''; ?>
 
                         </div>
 
@@ -371,7 +379,7 @@ include "includes/header.php";
 
                         <div class="bk-price-row">
 
-                            <span>Room price for <?= $nights; ?> Night<?= $nights > 1 ? 's' : ''; ?></span>
+                            <span>Room price for <?= $nights; ?> Night<?= $nights > 1 ? 's' : ''; ?> &times; <?= $rooms; ?> Room<?= $rooms > 1 ? 's' : ''; ?></span>
 
                             <span>₹<?= number_format($subtotal, 0); ?></span>
 

@@ -1,0 +1,207 @@
+/* ===========================================================
+   CONTACT US PAGE
+   Depends on variables and .bk-* classes defined in booking.css
+   - load booking.css before this file.
+=========================================================== */
+
+.cu-layout{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:40px;
+
+    align-items:start;
+
+}
+
+.cu-detail-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:22px;
+
+    margin:24px 0 28px;
+
+}
+
+.cu-detail-item{
+
+    display:flex;
+
+    gap:14px;
+
+    align-items:flex-start;
+
+}
+
+.cu-detail-icon{
+
+    width:40px;
+
+    height:40px;
+
+    border-radius:50%;
+
+    background:var(--red-soft);
+
+    color:var(--red);
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    font-size:15px;
+
+    flex-shrink:0;
+
+}
+
+.cu-detail-item h4{
+
+    font-size:13px;
+
+    font-weight:600;
+
+    color:var(--ink);
+
+    margin-bottom:4px;
+
+    text-transform:uppercase;
+
+    letter-spacing:.04em;
+
+}
+
+.cu-detail-item p{
+
+    color:var(--ink-soft);
+
+    font-size:14px;
+
+    line-height:1.6;
+
+}
+
+.cu-detail-item a{
+
+    color:var(--ink-soft);
+
+}
+
+.cu-detail-item a:hover{
+
+    color:var(--red);
+
+}
+
+.cu-direction-btn{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    background:var(--ink);
+
+    color:#fff;
+
+    padding:13px 26px;
+
+    border-radius:30px;
+
+    font-weight:600;
+
+    font-size:14px;
+
+    transition:.3s;
+
+}
+
+.cu-direction-btn:hover{
+
+    background:var(--red);
+
+}
+
+/* Extend the existing bk-form-group input styling to
+   textarea and select, since the login/booking forms
+   only ever needed <input> before this page. */
+
+.bk-form-group textarea{
+
+    width:100%;
+
+    padding:13px 15px;
+
+    border:1px solid var(--line);
+
+    border-radius:8px;
+
+    font-size:14px;
+
+    font-family:'Inter',sans-serif;
+
+    color:var(--ink);
+
+    outline:none;
+
+    resize:vertical;
+
+    min-height:120px;
+
+}
+
+.bk-form-group textarea:focus{
+
+    border-color:var(--red);
+
+}
+
+.bk-form-group select{
+
+    width:100%;
+
+    padding:13px 15px;
+
+    border:1px solid var(--line);
+
+    border-radius:8px;
+
+    font-size:14px;
+
+    font-family:'Inter',sans-serif;
+
+    color:var(--ink);
+
+    outline:none;
+
+    background:var(--white);
+
+}
+
+.bk-form-group select:focus{
+
+    border-color:var(--red);
+
+}
+
+/* ===========================
+   RESPONSIVE
+============================ */
+
+@media(max-width:900px){
+
+    .cu-layout{
+
+        grid-template-columns:1fr;
+
+    }
+
+}

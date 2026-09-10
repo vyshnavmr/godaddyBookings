@@ -46,6 +46,14 @@
 
 }
 
+.pd-booking-field input.pd-field-error{
+
+    border-color:#c0392b;
+
+    box-shadow:0 0 0 3px rgba(192,57,43,.15);
+
+}
+
 .pd-discount-badge{
 
     position:absolute;

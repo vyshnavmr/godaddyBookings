@@ -311,7 +311,7 @@ include "includes/header.php";
 
                     </div>
 
-                    <form action="booking.php" method="GET">
+                    <form action="booking.php" method="GET" id="bookingForm">
 
                         <input type="hidden" name="property_id" value="<?= $property_id; ?>">
 
@@ -342,6 +342,22 @@ include "includes/header.php";
                                 <?php for ($g = 1; $g <= (int)$room['max_guests']; $g++) { ?>
 
                                     <option value="<?= $g; ?>"><?= $g; ?> Guest<?= $g > 1 ? 's' : ''; ?></option>
+
+                                <?php } ?>
+
+                            </select>
+
+                        </div>
+
+                        <div class="pd-booking-field">
+
+                            <label>Rooms</label>
+
+                            <select name="rooms" id="pdRoomsCount">
+
+                                <?php for ($r = 1; $r <= 5; $r++) { ?>
+
+                                    <option value="<?= $r; ?>"><?= $r; ?> Room<?= $r > 1 ? 's' : ''; ?></option>
 
                                 <?php } ?>
 

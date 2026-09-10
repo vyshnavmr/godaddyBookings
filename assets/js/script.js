@@ -139,19 +139,39 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor=>{
 
 });
 
+
 /* ==========================================
-   SEARCH BUTTON
+   HERO SEARCH - redirects to properties.php
+   with whatever filters were filled in. Dates
+   and guests are optional; only non-empty
+   values are added to the query string, so an
+   empty search still lands on properties.php
+   showing everything.
 ========================================== */
 
-const searchButton=document.querySelector(".search-box button");
+const heroSearchBtn = document.getElementById("heroSearchBtn");
 
-if(searchButton){
+if (heroSearchBtn) {
 
-searchButton.addEventListener("click",()=>{
+    heroSearchBtn.addEventListener("click", function () {
 
-    alert("Property search will be connected to the database later.");
+        const destination = document.getElementById("heroDestination").value.trim();
+        const checkIn = document.getElementById("heroCheckIn").value;
+        const checkOut = document.getElementById("heroCheckOut").value;
+        const guests = document.getElementById("heroGuests").value;
 
-});
+        const params = new URLSearchParams();
+
+        if (destination) params.set("search", destination);
+        if (checkIn) params.set("check_in", checkIn);
+        if (checkOut) params.set("check_out", checkOut);
+        if (guests) params.set("guests", guests);
+
+        const queryString = params.toString();
+
+        window.location.href = "properties.php" + (queryString ? "?" + queryString : "");
+
+    });
 
 }
 
@@ -238,9 +258,16 @@ if (pdMainImage && pdThumbs.length > 0) {
 ========================================== */
 
 const pdRoomRadios = document.querySelectorAll(".pd-room-radio");
+const pdRoomsCount = document.getElementById("pdRoomsCount");
 
 const pdBookingAmount = document.querySelector(".pd-booking-amount");
 const pdBookingFrom = document.querySelector(".pd-booking-from");
+
+function pdGetRoomsCount() {
+
+    return pdRoomsCount ? (parseInt(pdRoomsCount.value, 10) || 1) : 1;
+
+}
 
 function updateSelectedRoomCard() {
 
@@ -254,9 +281,11 @@ function updateSelectedRoomCard() {
 
             if (pdBookingAmount) {
 
-                const price = parseFloat(radio.dataset.price) || 0;
+                const unitPrice = parseFloat(radio.dataset.price) || 0;
 
-                pdBookingAmount.textContent = "₹" + price.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+                const total = unitPrice * pdGetRoomsCount();
+
+                pdBookingAmount.textContent = "₹" + total.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
                 if (pdBookingFrom) {
                     pdBookingFrom.textContent = "Selected Room";
@@ -280,9 +309,79 @@ if (pdRoomRadios.length > 0) {
         radio.addEventListener("change", updateSelectedRoomCard);
     });
 
-    /* Reflect whichever room is checked by default on page load */
+    if (pdRoomsCount) {
+        pdRoomsCount.addEventListener("change", updateSelectedRoomCard);
+    }
+
+    /* Reflect whichever room is checked, and the default room
+       count, on page load */
 
     updateSelectedRoomCard();
+
+}
+
+
+/* ==========================================
+   REQUIRE DATES BEFORE SUBMITTING A BOOKING
+   FORM (property-details.php, room-details.php)
+
+   Uses bookingForm.elements instead of querySelector,
+   since property-details.php's date fields live outside
+   the <form> tag and are linked back to it via the
+   form="bookingForm" attribute - querySelector only
+   searches DOM descendants and would miss them.
+========================================== */
+
+const bookingForm = document.getElementById("bookingForm");
+
+if (bookingForm) {
+
+    bookingForm.addEventListener("submit", function (e) {
+
+        const checkIn = bookingForm.elements["check_in"];
+        const checkOut = bookingForm.elements["check_out"];
+
+        let hasError = false;
+
+        [checkIn, checkOut].forEach(function (field) {
+
+            if (field) {
+                field.classList.remove("pd-field-error", "rd-field-error");
+            }
+
+        });
+
+        if (!checkIn || !checkIn.value || !checkOut || !checkOut.value) {
+
+            hasError = true;
+
+            if (checkIn && !checkIn.value) checkIn.classList.add("pd-field-error", "rd-field-error");
+
+            if (checkOut && !checkOut.value) checkOut.classList.add("pd-field-error", "rd-field-error");
+
+        } else if (checkOut.value <= checkIn.value) {
+
+            hasError = true;
+
+            checkOut.classList.add("pd-field-error", "rd-field-error");
+
+        }
+
+        if (hasError) {
+
+            e.preventDefault();
+
+            alert("Please select your check-in and check-out dates to continue.");
+
+            if (checkIn && !checkIn.value) {
+                checkIn.focus();
+            } else if (checkOut) {
+                checkOut.focus();
+            }
+
+        }
+
+    });
 
 }
 

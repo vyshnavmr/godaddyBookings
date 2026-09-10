@@ -57,11 +57,15 @@ if (isset($conn)) {
     <link rel="stylesheet"
         href="assets/css/styles.css">
 
-    <?php if (isset($pageCss) && !empty($pageCss)) { ?>
+    <?php if (isset($pageCss) && !empty($pageCss)) {
 
-        <link rel="stylesheet" href="<?= htmlspecialchars($pageCss); ?>">
+    $pageCssFiles = is_array($pageCss) ? $pageCss : [$pageCss];
 
-    <?php } ?>
+    foreach ($pageCssFiles as $cssFile) { ?>
+
+        <link rel="stylesheet" href="<?= htmlspecialchars($cssFile); ?>">
+
+    <?php }} ?>
 
 </head>
 
@@ -73,43 +77,53 @@ if (isset($conn)) {
                 <img src="assets/images/logo-mb.png" alt="">
                 <h2>GodaddyBooking</h2>
             </div>
-            <nav>
-                <a href="index.php" class="<?= ($currentPage == 'home') ? 'active' : ''; ?>">Home</a>
 
-                <div class="nav-item-dropdown">
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
+                <i class="fa-solid fa-bars"></i>
+            </button>
 
-                    <a href="properties.php" class="nav-dropdown-trigger <?= ($currentPage == 'properties') ? 'active' : ''; ?>">
-                        Properties
-                        <?php if (!empty($navPropertyTypes)) { ?>
-                            <i class="fa-solid fa-chevron-down nav-caret"></i>
-                        <?php } ?>
-                    </a>
+            <div class="nav-collapse" id="navCollapse">
 
-                    <?php if (!empty($navPropertyTypes)) { ?>
+                <nav>
+                    <a href="index.php" class="<?= ($currentPage == 'home') ? 'active' : ''; ?>">Home</a>
 
-                        <div class="nav-dropdown-menu">
+                    <div class="nav-item-dropdown">
 
-                            <a href="properties.php">All Properties</a>
-
-                            <?php foreach ($navPropertyTypes as $type) { ?>
-
-                                <a href="properties.php?type_id=<?= $type['id']; ?>"><?= htmlspecialchars($type['type_name']); ?></a>
-
+                        <a href="properties.php" class="nav-dropdown-trigger <?= ($currentPage == 'properties') ? 'active' : ''; ?>">
+                            Properties
+                            <?php if (!empty($navPropertyTypes)) { ?>
+                                <i class="fa-solid fa-chevron-down nav-caret"></i>
                             <?php } ?>
+                        </a>
 
-                        </div>
+                        <?php if (!empty($navPropertyTypes)) { ?>
 
-                    <?php } ?>
+                            <div class="nav-dropdown-menu">
 
-                </div>
+                                <a href="properties.php">All Properties</a>
 
-                <a href="index.php#destinations" class="<?= ($currentPage == 'destinations') ? 'active' : ''; ?>">Destinations</a>
-                <a href="index.php#why-us" class="<?= ($currentPage == 'about') ? 'active' : ''; ?>">About</a>
-                <a href="index.php#contact" class="<?= ($currentPage == 'contact') ? 'active' : ''; ?>">Contact</a>
-            </nav>
-            <a href="index.php#search-box" class="book-btn">
-                Book Now
-            </a>
+                                <?php foreach ($navPropertyTypes as $type) { ?>
+
+                                    <a href="properties.php?type_id=<?= $type['id']; ?>"><?= htmlspecialchars($type['type_name']); ?></a>
+
+                                <?php } ?>
+
+                            </div>
+
+                        <?php } ?>
+
+                    </div>
+
+                    <a href="index.php#destinations" class="<?= ($currentPage == 'destinations') ? 'active' : ''; ?>">Destinations</a>
+                    <a href="index.php#why-us" class="<?= ($currentPage == 'about') ? 'active' : ''; ?>">About</a>
+                    <a href="contact-us.php" class="<?= ($currentPage == 'contact') ? 'active' : ''; ?>">Contact</a>
+                </nav>
+
+                <a href="index.php#search-box" class="book-btn">
+                    Book Now
+                </a>
+
+            </div>
         </div>
     </header>
 
@@ -141,4 +155,41 @@ if (isset($conn)) {
             });
 
         });
+
+        const navToggle = document.getElementById("navToggle");
+        const navCollapse = document.getElementById("navCollapse");
+
+        if (navToggle && navCollapse) {
+
+            navToggle.addEventListener("click", function () {
+
+                const isOpen = navCollapse.classList.toggle("open");
+
+                navToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+
+                navToggle.innerHTML = isOpen
+                    ? '<i class="fa-solid fa-xmark"></i>'
+                    : '<i class="fa-solid fa-bars"></i>';
+
+            });
+
+            // Close the menu when a normal link is tapped (but not the
+            // Properties dropdown trigger, which needs its own click first)
+            navCollapse.querySelectorAll("a").forEach(function (link) {
+
+                link.addEventListener("click", function () {
+
+                    if (window.innerWidth <= 768 && !link.classList.contains("nav-dropdown-trigger")) {
+
+                        navCollapse.classList.remove("open");
+                        navToggle.setAttribute("aria-expanded", "false");
+                        navToggle.innerHTML = '<i class="fa-solid fa-bars"></i>';
+
+                    }
+
+                });
+
+            });
+
+        }
     </script>

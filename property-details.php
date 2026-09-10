@@ -487,6 +487,26 @@ include "includes/header.php";
 
                     </div>
 
+                    <div class="pd-booking-field">
+
+                        <label>Rooms</label>
+
+                        <select form="bookingForm" name="rooms" id="pdRoomsCount">
+
+                            <?php for ($r = 1; $r <= 5; $r++) { ?>
+
+                                <option value="<?= $r; ?>"><?= $r; ?> Room<?= $r > 1 ? 's' : ''; ?></option>
+
+                            <?php } ?>
+
+                        </select>
+
+                    </div>
+
+                    <div class="pd-booking-field">
+
+                        <label>Guests</label>
+
                     <button type="submit" form="bookingForm" class="pd-book-btn" <?= empty($rooms) ? 'disabled' : ''; ?>>
 
                         Book Now
