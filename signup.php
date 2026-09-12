@@ -10,9 +10,6 @@ ALREADY LOGGED IN?
 
 $redirect = $_GET['redirect'] ?? "index.php";
 
-/* Only allow redirecting within this site - never to an
-   external URL, to avoid an open-redirect vulnerability */
-
 if (preg_match('#^(https?:)?//#i', $redirect) || str_starts_with($redirect, '\\')) {
     $redirect = "index.php";
 }
@@ -38,16 +35,16 @@ if (empty($_SESSION['csrf_token'])) {
 
 
 /*====================================================
-FLASH ERRORS FROM login-save.php
+FLASH ERRORS FROM signup-save.php
 ====================================================*/
 
 $errors = [];
 
-if (isset($_SESSION['login_errors'])) {
+if (isset($_SESSION['signup_errors'])) {
 
-    $errors = $_SESSION['login_errors'];
+    $errors = $_SESSION['signup_errors'];
 
-    unset($_SESSION['login_errors']);
+    unset($_SESSION['signup_errors']);
 
 }
 
@@ -56,7 +53,7 @@ if (isset($_SESSION['login_errors'])) {
 RENDER PAGE
 ====================================================*/
 
-$pageTitle = "Log In - Godaddy Booking";
+$pageTitle = "Sign Up - Godaddy Booking";
 
 $currentPage = "";
 
@@ -76,13 +73,13 @@ include "includes/header.php";
 
                 <div class="bk-card-header">
 
-                    <h2>Log In</h2>
+                    <h2>Create Your Account</h2>
 
                 </div>
 
                 <div class="bk-card-body">
 
-                    <p class="bk-card-subtitle">Log in to continue with your booking or manage your account.</p>
+                    <p class="bk-card-subtitle">Sign up to book faster and track your bookings.</p>
 
                     <?php if (!empty($errors)) { ?>
 
@@ -102,7 +99,7 @@ include "includes/header.php";
 
                     <?php } ?>
 
-                    <form action="login-save.php" method="POST">
+                    <form action="signup-save.php" method="POST">
 
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']); ?>">
 
@@ -110,33 +107,61 @@ include "includes/header.php";
 
                         <div class="bk-form-group">
 
-                            <label>Email or Mobile Number</label>
+                            <label>Full Name</label>
 
-                            <input type="text" name="identifier" placeholder="name@abc.com or 10-digit number" required autofocus>
+                            <input type="text" name="full_name" placeholder="Enter first and last name" required autofocus>
 
                         </div>
 
                         <div class="bk-form-group">
 
-                            <label>Password</label>
+                            <label>Email Address</label>
 
-                            <input type="password" name="password" placeholder="Enter your password" required>
+                            <input type="email" name="email" placeholder="name@abc.com" required>
 
                         </div>
 
-                        <p class="bk-forgot-link">
+                        <div class="bk-form-group">
 
-                            <a href="forgot-password.php">Forgot your password?</a>
+                            <label>Mobile Number</label>
 
-                        </p>
+                            <div class="bk-phone-group">
 
-                        <button type="submit" class="bk-submit-btn">Log In</button>
+                                <span class="bk-phone-prefix">+91</span>
+
+                                <input type="tel" name="phone" placeholder="e.g. 1234567890" pattern="[0-9]{10}" required>
+
+                            </div>
+
+                        </div>
+
+                        <div class="bk-form-row">
+
+                            <div class="bk-form-group">
+
+                                <label>Password</label>
+
+                                <input type="password" name="password" placeholder="Create a password" minlength="8" required>
+
+                            </div>
+
+                            <div class="bk-form-group">
+
+                                <label>Confirm Password</label>
+
+                                <input type="password" name="confirm_password" placeholder="Re-enter your password" minlength="8" required>
+
+                            </div>
+
+                        </div>
+
+                        <button type="submit" class="bk-submit-btn">Sign Up</button>
 
                     </form>
 
                     <p class="bk-login-prompt bk-no-border">
 
-                        New here? <a href="signup.php?redirect=<?= urlencode($redirect); ?>">Create an account</a>, or <a href="properties.php">browse properties</a> and sign up automatically when you book.
+                        Already have an account? <a href="login.php?redirect=<?= urlencode($redirect); ?>">Log in</a> instead.
 
                     </p>
 

@@ -31,7 +31,9 @@ READ FORM DATA
 $property_code      = trim($_POST['property_code']);
 $title              = trim($_POST['title']);
 
-$destination_id     = (int)$_POST['destination_id'];
+$destination_id_raw = $_POST['destination_id'] ?? "";
+$new_destination_name = trim($_POST['new_destination_name'] ?? "");
+
 $property_type_id   = (int)$_POST['property_type_id'];
 
 $description        = trim($_POST['description']);
@@ -76,8 +78,17 @@ if($property_code=="")
 if($title=="")
     $errors[]="Property Name is required.";
 
-if($destination_id<=0)
-    $errors[]="Select Destination.";
+if ($destination_id_raw === "new") {
+
+    if ($new_destination_name === "") {
+        $errors[] = "Please enter a name for the new destination.";
+    }
+
+} elseif ((int)$destination_id_raw <= 0) {
+
+    $errors[] = "Select Destination.";
+
+}
 
 if($property_type_id<=0)
     $errors[]="Select Property Type.";
@@ -102,6 +113,78 @@ if(count($errors)>0){
     header("Location:add.php");
 
     exit();
+
+}
+
+
+/*====================================================
+RESOLVE DESTINATION - either an existing id from the
+dropdown, or a brand-new destination typed in by the admin
+====================================================*/
+
+if ($destination_id_raw === "new") {
+
+    /* Normalize before comparing/storing - trims whitespace,
+       strips trailing punctuation like a stray comma or period,
+       and collapses repeated spaces. This is what prevents
+       "Kollam", "Kollam,", and "kollam " from becoming three
+       separate rows. */
+
+    $new_destination_name = trim($new_destination_name);
+
+    $new_destination_name = rtrim($new_destination_name, " ,.-");
+
+    $new_destination_name = preg_replace('/\s+/', ' ', $new_destination_name);
+
+    if ($new_destination_name === "") {
+
+        $_SESSION['errors'][] = "Please enter a valid destination name.";
+
+        header("Location:add.php");
+
+        exit();
+
+    }
+
+    $sql = "SELECT id FROM destinations WHERE LOWER(destination_name) = LOWER(?)";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param($stmt, "s", $new_destination_name);
+
+    mysqli_stmt_execute($stmt);
+
+    $existingDestination = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+
+    if ($existingDestination) {
+
+        $destination_id = (int)$existingDestination['id'];
+
+    } else {
+
+        $sql = "INSERT INTO destinations(destination_name, is_active) VALUES(?, 1)";
+
+        $stmt = mysqli_prepare($conn, $sql);
+
+        mysqli_stmt_bind_param($stmt, "s", $new_destination_name);
+
+        if (!mysqli_stmt_execute($stmt)) {
+
+            $_SESSION['errors'][] = "Failed to create the new destination.";
+
+            header("Location:add.php");
+
+            exit();
+
+        }
+
+        $destination_id = mysqli_insert_id($conn);
+
+    }
+
+} else {
+
+    $destination_id = (int)$destination_id_raw;
 
 }
 

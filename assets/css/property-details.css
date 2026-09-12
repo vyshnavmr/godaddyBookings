@@ -827,3 +827,258 @@
     }
 
 }
+
+/* ===========================
+   STAR RATING INPUT (write review)
+============================ */
+
+.pd-review-form{
+
+    background:var(--cream);
+
+    border:1px solid var(--line);
+
+    border-radius:var(--radius-lg);
+
+    padding:22px;
+
+    margin-bottom:28px;
+
+}
+
+.pd-review-form-label{
+
+    display:block;
+
+    font-size:13px;
+
+    font-weight:600;
+
+    color:var(--ink);
+
+    margin-bottom:10px;
+
+}
+
+.pd-star-input{
+
+    display:flex;
+
+    flex-direction:row-reverse;
+
+    justify-content:flex-end;
+
+    gap:4px;
+
+    margin-bottom:16px;
+
+}
+
+.pd-star-input input{
+
+    display:none;
+
+}
+
+.pd-star-input label{
+
+    font-size:24px;
+
+    color:var(--line);
+
+    cursor:pointer;
+
+    transition:.15s;
+
+}
+
+.pd-star-input input:checked ~ label,
+
+.pd-star-input label:hover,
+
+.pd-star-input label:hover ~ label{
+
+    color:#f5a623;
+
+}
+
+.pd-review-form textarea{
+
+    width:100%;
+
+    min-height:90px;
+
+    padding:13px 15px;
+
+    border:1px solid var(--line);
+
+    border-radius:8px;
+
+    font-size:14px;
+
+    font-family:'Inter',sans-serif;
+
+    resize:vertical;
+
+    margin-bottom:14px;
+
+}
+
+.pd-review-note{
+
+    color:var(--ink-soft);
+
+    font-size:14px;
+
+    margin-bottom:20px;
+
+}
+
+.pd-review-note a{
+
+    color:var(--red);
+
+    font-weight:600;
+
+}
+
+/* ===========================
+   REVIEW LIST
+============================ */
+
+.pd-reviews-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:18px;
+
+}
+
+.pd-review-card{
+
+    border-bottom:1px solid var(--line);
+
+    padding-bottom:18px;
+
+}
+
+.pd-review-top{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    margin-bottom:8px;
+
+}
+
+.pd-review-stars i{
+
+    color:var(--line);
+
+    font-size:13px;
+
+}
+
+.pd-review-stars i.filled{
+
+    color:#f5a623;
+
+}
+
+.pd-review-comment{
+
+    color:var(--ink-soft);
+
+    font-size:14px;
+
+    line-height:1.6;
+
+}
+
+.pd-review-date{
+
+    display:block;
+
+    font-size:12px;
+
+    color:var(--ink-soft);
+
+    margin-bottom:10px;
+
+}
+
+/* ===========================
+   RATING BADGE
+============================ */
+
+.pd-rating-badge{
+
+    color:var(--ink);
+
+    text-decoration:none;
+
+}
+
+.pd-rating-badge i{
+
+    color:#f5a623;
+
+    margin-right:2px;
+
+}
+
+
+.pd-review-avatar-row{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    margin-bottom:8px;
+
+}
+
+.pd-review-avatar{
+
+    width:36px;
+
+    height:36px;
+
+    border-radius:50%;
+
+    background:var(--sand);
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    color:var(--ink-soft);
+
+    font-size:15px;
+
+    flex-shrink:0;
+
+}
+
+.pd-review-avatar-row strong{
+
+    color:var(--ink);
+
+    font-size:15px;
+
+}
+
+.pd-review-stars{
+
+    margin-bottom:4px;
+
+}

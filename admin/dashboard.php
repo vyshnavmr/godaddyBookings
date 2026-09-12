@@ -26,6 +26,8 @@ if ($isRestrictedManager) {
 
     $totalBookings = 0;
 
+    $cancellationRequestCount = 0;
+
     if (!empty($managerPropertyIds)) {
 
         $idList = implode(",", array_map("intval", $managerPropertyIds));
@@ -47,6 +49,10 @@ if ($isRestrictedManager) {
             $totalBookings += (int)$row['booking_count'];
 
         }
+
+        $cancelSql = "SELECT COUNT(*) total FROM bookings WHERE booking_status = 'Cancellation Requested' AND property_id IN ($idList)";
+
+        $cancellationRequestCount = mysqli_fetch_assoc(mysqli_query($conn, $cancelSql))['total'];
 
     }
 
@@ -213,6 +219,18 @@ if ($isRestrictedManager) {
 
                 </div>
 
+                <?php if ($cancellationRequestCount > 0) { ?>
+
+                    <div class="manager-summary-card" style="border-left:4px solid #d97706;">
+
+                        <h3>Cancellation Requests</h3>
+
+                        <h2 style="color:#d97706;"><?= $cancellationRequestCount; ?></h2>
+
+                    </div>
+
+                <?php } ?>
+
             </div>
 
             <?php foreach ($properties as $property) { ?>
@@ -345,6 +363,11 @@ $bookingCount = mysqli_fetch_assoc(mysqli_query(
     "SELECT COUNT(*) total FROM bookings"
 ))['total'];
 
+$cancellationRequestCount = mysqli_fetch_assoc(mysqli_query(
+    $conn,
+    "SELECT COUNT(*) total FROM bookings WHERE booking_status = 'Cancellation Requested'"
+))['total'];
+
 $userCount = mysqli_fetch_assoc(mysqli_query(
     $conn,
     "SELECT COUNT(*) total FROM users"
@@ -388,6 +411,46 @@ CONTENT
                 </h2>
 
             </div>
+
+                        <div class="card">
+
+                <i class="fa-solid fa-calendar-check"></i>
+
+                <h3>
+
+                    Bookings
+
+                </h3>
+
+                <h2>
+
+                    <?php echo $bookingCount; ?>
+
+                </h2>
+
+            </div>
+
+            <?php if ($cancellationRequestCount > 0) { ?>
+
+                <div class="card" style="border-left:4px solid #d97706;">
+
+                    <i class="fa-solid fa-triangle-exclamation" style="color:#d97706;"></i>
+
+                    <h3>
+
+                        Cancellation Requests
+
+                    </h3>
+
+                    <h2 style="color:#d97706;">
+
+                        <?php echo $cancellationRequestCount; ?>
+
+                    </h2>
+
+                </div>
+
+            <?php } ?>
 
             <div class="card">
 

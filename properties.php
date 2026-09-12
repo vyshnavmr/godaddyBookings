@@ -14,6 +14,8 @@ $destination_id = (int)($_GET['destination_id'] ?? 0);
 
 $type_id        = (int)($_GET['type_id'] ?? 0);
 
+$guests         = (int)($_GET['guests'] ?? 0);
+
 $destinationName = "";
 
 if ($destination_id > 0) {
@@ -120,6 +122,24 @@ if ($type_id > 0) {
 
 }
 
+if ($guests > 0) {
+
+    $sql .= "
+
+    AND EXISTS (
+
+        SELECT 1 FROM property_rooms pr
+
+        WHERE pr.property_id = p.id
+
+        AND pr.status = 'Available'
+
+        AND pr.max_guests >= " . $guests . "
+
+    )";
+
+}
+
 if ($search != "") {
 
     $escaped = mysqli_real_escape_string($conn, $search);
@@ -192,6 +212,14 @@ RENDER PAGE
 
 $pageTitle = "All Properties - Godaddy Booking";
 
+$canonicalParams = [];
+
+if ($destination_id > 0) $canonicalParams['destination_id'] = $destination_id;
+
+if ($type_id > 0) $canonicalParams['type_id'] = $type_id;
+
+$canonicalUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . "/properties.php" . (!empty($canonicalParams) ? "?" . http_build_query($canonicalParams) : "");
+
 $currentPage = "properties";
 
 include "includes/header.php";
@@ -220,6 +248,10 @@ include "includes/header.php";
 
             <?php if ($type_id > 0) { ?>
                 <input type="hidden" name="type_id" value="<?= $type_id; ?>">
+            <?php } ?>
+
+            <?php if ($guests > 0) { ?>
+                <input type="hidden" name="guests" value="<?= $guests; ?>">
             <?php } ?>
 
             <div class="search-input-wrap">

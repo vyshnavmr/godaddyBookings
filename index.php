@@ -30,13 +30,35 @@ AND p.featured = 1
 
 ORDER BY p.discount_percent DESC, p.created_at DESC
 
-LIMIT 6
+LIMIT 8
 
 ";
 
 $result = mysqli_query($conn, $sql);
 
-if (mysqli_num_rows($result) === 0) {
+$properties = [];
+
+while ($row = mysqli_fetch_assoc($result)) {
+
+    $properties[] = $row;
+
+}
+
+
+/*====================================================
+FILL REMAINING SLOTS - if fewer than 8 properties are
+marked Featured, top up with other Available properties
+(excluding ones already picked) so the homepage still
+shows up to 8 whenever that many exist site-wide.
+====================================================*/
+
+$remainingSlots = 8 - count($properties);
+
+if ($remainingSlots > 0) {
+
+    $excludeIds = array_column($properties, 'id');
+
+    $excludeIdList = !empty($excludeIds) ? implode(",", array_map('intval', $excludeIds)) : "0";
 
     $sql = "
 
@@ -54,21 +76,21 @@ if (mysqli_num_rows($result) === 0) {
 
     WHERE p.status = 'Available'
 
+    AND p.id NOT IN ($excludeIdList)
+
     ORDER BY p.discount_percent DESC, RAND()
 
-    LIMIT 8
+    LIMIT $remainingSlots
 
     ";
 
     $result = mysqli_query($conn, $sql);
 
-}
+    while ($row = mysqli_fetch_assoc($result)) {
 
-$properties = [];
+        $properties[] = $row;
 
-while ($row = mysqli_fetch_assoc($result)) {
-
-    $properties[] = $row;
+    }
 
 }
 
@@ -89,6 +111,49 @@ while ($row = mysqli_fetch_assoc($destResult)) {
 
 }
 
+/*====================================================
+TESTIMONIALS - highlighted reviews first, then most
+recent. Limited to 6 so the homepage doesn't grow
+unbounded as reviews accumulate.
+====================================================*/
+
+$sql = "
+
+SELECT
+
+r.rating,
+
+r.comment,
+
+r.created_at,
+
+u.name AS reviewer_name,
+
+p.title AS property_title
+
+FROM reviews r
+
+INNER JOIN users u ON r.user_id = u.id
+
+INNER JOIN properties p ON r.property_id = p.id
+
+ORDER BY r.is_highlighted DESC, r.created_at DESC
+
+LIMIT 6
+
+";
+
+$testimonialsResult = mysqli_query($conn, $sql);
+
+$testimonials = [];
+
+while ($row = mysqli_fetch_assoc($testimonialsResult)) {
+
+    $testimonials[] = $row;
+
+}
+
+
 ?>
 
 <?php
@@ -103,11 +168,28 @@ include "includes/header.php";
 
 <?php if (isset($_GET['booking_confirmed']) && $_GET['booking_confirmed'] == '1') { ?>
 
-    <div class="container" style="margin-top:30px;">
+    <div class="bkc-overlay" id="bkcOverlay">
 
-        <div style="background:var(--red-soft); color:var(--red-dark); padding:18px 24px; border-radius:12px; text-align:center; font-weight:600;">
+        <div class="bkc-modal">
 
-            🎉 Your booking request has been received! We'll be in touch shortly to confirm the details.
+            <button type="button" class="bkc-close" id="bkcClose" aria-label="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="bkc-icon">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+
+            <h2>Thank You for Your Booking!</h2>
+
+            <p>Our executive will contact you shortly to confirm the details.</p>
+
+            <p class="bkc-call-note">Need to speak to us right away?</p>
+
+            <a href="tel:+919895928883" class="bkc-call-btn">
+                <i class="fa-solid fa-phone"></i>
+                Call +91 98959 28883
+            </a>
 
         </div>
 
@@ -165,6 +247,7 @@ include "includes/header.php";
             </div>
         </div>
     </section>
+
     <!-- ================= FEATURED ================= -->
     <section class="properties" id="properties">
         <div class="section-heading">
@@ -252,7 +335,21 @@ include "includes/header.php";
                 </div>
 
             <?php endforeach; ?>
+
             </div>
+
+            <?php if (!empty($properties)) { ?>
+
+                <div class="show-more-wrap">
+
+                    <a href="properties.php" class="show-more-btn">
+                        Show More Properties
+                    </a>
+
+                </div>
+
+            <?php } ?>
+
         </div>
     </section>
 
@@ -305,6 +402,7 @@ include "includes/header.php";
             </div>
         </div>
     </section>
+
     <!-- ================= DESTINATIONS ================= -->
     <section class="destinations" id="destinations">
         <div class="section-heading">
@@ -335,8 +433,8 @@ include "includes/header.php";
 
                 ?>
 
-                <a
-                    href="properties.php?destination_id=<?= $destination['id']; ?>"
+                
+                    <a href="properties.php?destination_id=<?= $destination['id']; ?>"
                     class="destination"
                     style="background-image:url('<?= htmlspecialchars($destImage); ?>');">
 
@@ -348,6 +446,7 @@ include "includes/header.php";
 
         </div>
     </section>
+
     <!-- ================= TESTIMONIALS ================= -->
     <section class="testimonials">
         <div class="section-heading">
@@ -356,24 +455,41 @@ include "includes/header.php";
                 What Our Guests Say
             </h2>
         </div>
-        <div class="testimonial-container">
-            <div class="testimonial">
-                <p>
-                    "Excellent service and beautiful properties. Booking was very easy."
-                </p>
-                <h4>
-                    — Rahul Nair
-                </h4>
+
+        <?php if (!empty($testimonials)) { ?>
+
+            <div class="testimonial-container">
+
+                <?php foreach ($testimonials as $testimonial) { ?>
+
+                    <div class="testimonial">
+
+                        <div class="testimonial-stars">
+
+                            <?php for ($s = 1; $s <= 5; $s++) { ?>
+
+                                <i class="fa-solid fa-star <?= $s <= (int)$testimonial['rating'] ? 'filled' : ''; ?>"></i>
+
+                            <?php } ?>
+
+                        </div>
+
+                        <p>
+                            "<?= nl2br(htmlspecialchars($testimonial['comment'] ?: 'A wonderful stay from start to finish.')); ?>"
+                        </p>
+
+                        <h4>
+                            — <?= htmlspecialchars($testimonial['reviewer_name']); ?>
+                        </h4>
+
+                    </div>
+
+                <?php } ?>
+
             </div>
-            <div class="testimonial">
-                <p>
-                    "Our family vacation was amazing. Highly recommended."
-                </p>
-                <h4>
-                    — Priya Menon
-                </h4>
-            </div>
-        </div>
+
+        <?php } ?>
+
     </section>
 
     <!-- ================= FOOTER ================= -->

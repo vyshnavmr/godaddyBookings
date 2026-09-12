@@ -133,6 +133,8 @@ RENDER PAGE
 
 $pageTitle = htmlspecialchars($room['room_name']) . " - " . htmlspecialchars($room['property_title']) . " - Godaddy Booking";
 
+$canonicalUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . "/room-details.php?id=" . $id;
+
 $currentPage = "properties";
 
 $pageCss = "assets/css/room-details.css";
@@ -337,9 +339,9 @@ include "includes/header.php";
 
                             <label>Guests</label>
 
-                            <select name="guests">
+                            <select name="guests" id="rdGuestsCount">
 
-                                <?php for ($g = 1; $g <= (int)$room['max_guests']; $g++) { ?>
+                                <?php for ($g = 1; $g <= max(1, (int)$room['max_guests']); $g++) { ?>
 
                                     <option value="<?= $g; ?>"><?= $g; ?> Guest<?= $g > 1 ? 's' : ''; ?></option>
 
@@ -347,21 +349,31 @@ include "includes/header.php";
 
                             </select>
 
+                            <input type="hidden" id="rdBaseMaxGuests" value="<?= max(1, (int)$room['max_guests']); ?>">
+
                         </div>
 
-                        <div class="pd-booking-field">
+                        <div class="rd-booking-field">
 
                             <label>Rooms</label>
 
-                            <select name="rooms" id="pdRoomsCount">
+                            <?php $roomMaxRoomsAvailable = max(1, (int)($room['rooms_available'] ?? 1)); ?>
 
-                                <?php for ($r = 1; $r <= 5; $r++) { ?>
+                            <select name="rooms" id="rdRoomsCount">
+
+                                <?php for ($r = 1; $r <= $roomMaxRoomsAvailable; $r++) { ?>
 
                                     <option value="<?= $r; ?>"><?= $r; ?> Room<?= $r > 1 ? 's' : ''; ?></option>
 
                                 <?php } ?>
 
                             </select>
+
+                            <?php if ($roomMaxRoomsAvailable <= 3) { ?>
+
+                                <small class="rd-hint">Only <?= $roomMaxRoomsAvailable; ?> room<?= $roomMaxRoomsAvailable > 1 ? 's' : ''; ?> left of this type.</small>
+
+                            <?php } ?>
 
                         </div>
 

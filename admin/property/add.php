@@ -173,6 +173,7 @@ $amenityQuery = mysqli_query($conn, "SELECT * FROM amenities ORDER BY amenity_na
 
                     <select
                         name="destination_id"
+                        id="destinationSelect"
                         required>
 
                         <option value="">Choose Destination</option>
@@ -188,7 +189,21 @@ $amenityQuery = mysqli_query($conn, "SELECT * FROM amenities ORDER BY amenity_na
 
                         <?php } ?>
 
+                        <option value="new">+ Add New Destination</option>
+
                     </select>
+
+                    <div id="newDestinationWrap" style="display:none; margin-top:10px;">
+
+                        <input
+                            type="text"
+                            name="new_destination_name"
+                            id="newDestinationInput"
+                            placeholder="Enter new destination name">
+
+                        <small class="hint">This will be added to the destinations list automatically when you save.</small>
+
+                    </div>
 
                 </div>
 
@@ -646,6 +661,32 @@ $amenityQuery = mysqli_query($conn, "SELECT * FROM amenities ORDER BY amenity_na
 
     document.getElementById("priceInput").addEventListener("input", updateDiscountPreview);
     document.getElementById("discountInput").addEventListener("input", updateDiscountPreview);
+
+        /* Show/hide the "new destination" text field based on the
+       dropdown selection, and toggle its required attribute so
+       the browser enforces it only when actually needed. */
+
+    const destinationSelect = document.getElementById("destinationSelect");
+    const newDestinationWrap = document.getElementById("newDestinationWrap");
+    const newDestinationInput = document.getElementById("newDestinationInput");
+
+    destinationSelect.addEventListener("change", function () {
+
+        if (this.value === "new") {
+
+            newDestinationWrap.style.display = "block";
+            newDestinationInput.required = true;
+
+        } else {
+
+            newDestinationWrap.style.display = "none";
+            newDestinationInput.required = false;
+            newDestinationInput.value = "";
+
+        }
+
+    });
+
 </script>
 
 </body>

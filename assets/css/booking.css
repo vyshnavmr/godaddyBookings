@@ -627,3 +627,71 @@
 
     }
 }
+
+/* ===========================================================
+   LEGAL PAGES (Privacy Policy, Terms & Conditions)
+=========================================================== */
+
+.legal-content{
+
+    color:var(--ink-soft);
+
+    font-size:14px;
+
+    line-height:1.8;
+
+}
+
+.legal-updated{
+
+    font-size:13px;
+
+    color:var(--ink-soft);
+
+    font-style:italic;
+
+    margin-bottom:24px;
+
+}
+
+.legal-content h3{
+
+    font-family:'Fraunces',serif;
+
+    font-size:17px;
+
+    font-weight:600;
+
+    color:var(--ink);
+
+    margin-top:28px;
+
+    margin-bottom:10px;
+
+}
+
+.legal-content h3:first-of-type{
+
+    margin-top:0;
+
+}
+
+.legal-content ul{
+
+    margin:10px 0 16px 22px;
+
+}
+
+.legal-content li{
+
+    margin-bottom:6px;
+
+}
+
+.legal-content a{
+
+    color:var(--red);
+
+    font-weight:600;
+
+}

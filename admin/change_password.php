@@ -76,16 +76,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     /*====================================================
-    UPDATE PASSWORD
+    UPDATE PASSWORD - also keeps the reversible encrypted
+    copy in sync, but only for manager accounts, matching
+    the scope documented in crypto.php.
     ====================================================*/
 
     $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
 
-    $sql = "UPDATE admins SET password=? WHERE id=?";
+    if ((int)($admin['is_manager'] ?? 0) === 1) {
 
-    $stmt = mysqli_prepare($conn, $sql);
+        require_once "../config/crypto.php";
 
-    mysqli_stmt_bind_param($stmt, "si", $new_hash, $_SESSION['admin_id']);
+        $new_encrypted = encryptManagerPassword($new_password);
+
+        $sql = "UPDATE admins SET password=?, encrypted_password=? WHERE id=?";
+
+        $stmt = mysqli_prepare($conn, $sql);
+
+        mysqli_stmt_bind_param($stmt, "ssi", $new_hash, $new_encrypted, $_SESSION['admin_id']);
+
+    } else {
+
+        $sql = "UPDATE admins SET password=? WHERE id=?";
+
+        $stmt = mysqli_prepare($conn, $sql);
+
+        mysqli_stmt_bind_param($stmt, "si", $new_hash, $_SESSION['admin_id']);
+
+    }
 
     mysqli_stmt_execute($stmt);
 

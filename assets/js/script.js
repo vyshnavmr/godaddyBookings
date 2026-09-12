@@ -253,15 +253,56 @@ if (pdMainImage && pdThumbs.length > 0) {
 }
 
 
-/* ==========================================
-   PROPERTY DETAILS - ROOM SELECTION
-========================================== */
 
 const pdRoomRadios = document.querySelectorAll(".pd-room-radio");
 const pdRoomsCount = document.getElementById("pdRoomsCount");
 
 const pdBookingAmount = document.querySelector(".pd-booking-amount");
 const pdBookingFrom = document.querySelector(".pd-booking-from");
+
+function pdRebuildRoomsDropdown(maxRooms) {
+
+    if (!pdRoomsCount) return;
+
+    const previousValue = parseInt(pdRoomsCount.value, 10) || 1;
+
+    pdRoomsCount.innerHTML = "";
+
+    for (let r = 1; r <= maxRooms; r++) {
+
+        const opt = document.createElement("option");
+        opt.value = r;
+        opt.textContent = r + (r > 1 ? " Rooms" : " Room");
+        pdRoomsCount.appendChild(opt);
+
+    }
+
+    pdRoomsCount.value = previousValue <= maxRooms ? previousValue : maxRooms;
+
+}
+
+const pdGuestsCount = document.getElementById("pdGuestsCount");
+
+function pdRebuildGuestsDropdown(maxGuests) {
+
+    if (!pdGuestsCount) return;
+
+    const previousValue = parseInt(pdGuestsCount.value, 10) || 1;
+
+    pdGuestsCount.innerHTML = "";
+
+    for (let g = 1; g <= maxGuests; g++) {
+
+        const opt = document.createElement("option");
+        opt.value = g;
+        opt.textContent = g + (g > 1 ? " Guests" : " Guest");
+        pdGuestsCount.appendChild(opt);
+
+    }
+
+    pdGuestsCount.value = previousValue <= maxGuests ? previousValue : maxGuests;
+
+}
 
 function pdGetRoomsCount() {
 
@@ -278,6 +319,26 @@ function updateSelectedRoomCard() {
         if (radio.checked) {
 
             card.classList.add("selected");
+
+            const maxRooms = parseInt(radio.dataset.maxRooms, 10) || 1;
+
+            pdRebuildRoomsDropdown(maxRooms);
+
+            const pdRoomsHint = document.getElementById("pdRoomsHint");
+
+            if (pdRoomsHint) {
+
+                pdRoomsHint.textContent = maxRooms <= 3
+                    ? "Only " + maxRooms + " room" + (maxRooms > 1 ? "s" : "") + " left of this type."
+                    : "";
+
+            }
+
+            const maxGuestsPerRoom = parseInt(radio.dataset.maxGuests, 10) || 1;
+
+            const selectedRoomsCount = pdGetRoomsCount();
+
+            pdRebuildGuestsDropdown(maxGuestsPerRoom * selectedRoomsCount);
 
             if (pdBookingAmount) {
 
@@ -312,9 +373,6 @@ if (pdRoomRadios.length > 0) {
     if (pdRoomsCount) {
         pdRoomsCount.addEventListener("change", updateSelectedRoomCard);
     }
-
-    /* Reflect whichever room is checked, and the default room
-       count, on page load */
 
     updateSelectedRoomCard();
 
@@ -386,6 +444,58 @@ if (bookingForm) {
 }
 
 
+/* ==========================================
+   ROOM DETAILS - GUESTS SCALE WITH ROOMS
+   (only one room on this page, so guests max
+   is simply this room's base capacity times
+   however many rooms are selected)
+========================================== */
+
+const rdRoomsCount = document.getElementById("rdRoomsCount");
+const rdGuestsCount = document.getElementById("rdGuestsCount");
+const rdBaseMaxGuestsInput = document.getElementById("rdBaseMaxGuests");
+
+function rdRebuildGuestsDropdown(maxGuests) {
+
+    if (!rdGuestsCount) return;
+
+    const previousValue = parseInt(rdGuestsCount.value, 10) || 1;
+
+    rdGuestsCount.innerHTML = "";
+
+    for (let g = 1; g <= maxGuests; g++) {
+
+        const opt = document.createElement("option");
+        opt.value = g;
+        opt.textContent = g + (g > 1 ? " Guests" : " Guest");
+        rdGuestsCount.appendChild(opt);
+
+    }
+
+    rdGuestsCount.value = previousValue <= maxGuests ? previousValue : maxGuests;
+
+}
+
+function rdUpdateGuestsForRoomsCount() {
+
+    if (!rdRoomsCount || !rdBaseMaxGuestsInput) return;
+
+    const roomsCount = parseInt(rdRoomsCount.value, 10) || 1;
+
+    const baseMaxGuests = parseInt(rdBaseMaxGuestsInput.value, 10) || 1;
+
+    rdRebuildGuestsDropdown(baseMaxGuests * roomsCount);
+
+}
+
+if (rdRoomsCount) {
+
+    rdRoomsCount.addEventListener("change", rdUpdateGuestsForRoomsCount);
+
+    rdUpdateGuestsForRoomsCount();
+
+}
+
 
 /* ==========================================
    ROOM DETAILS - GALLERY THUMBNAILS
@@ -414,3 +524,93 @@ if (rdMainImage && rdThumbs.length > 0) {
     });
 
 }
+
+/* ==========================================
+   BOOKING CONFIRMATION MODAL
+========================================== */
+
+const bkcOverlay = document.getElementById("bkcOverlay");
+const bkcClose = document.getElementById("bkcClose");
+
+function closeBkcModal() {
+
+    if (!bkcOverlay) return;
+
+    bkcOverlay.remove();
+
+    /* Clean the ?booking_confirmed=1 out of the URL so a page
+       refresh, or the person navigating back later, doesn't
+       re-trigger the modal for a booking that's already been seen. */
+
+    const url = new URL(window.location.href);
+
+    url.searchParams.delete("booking_confirmed");
+
+    window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+
+}
+
+if (bkcOverlay) {
+
+    if (bkcClose) {
+        bkcClose.addEventListener("click", closeBkcModal);
+    }
+
+    bkcOverlay.addEventListener("click", function (e) {
+
+        if (e.target === bkcOverlay) {
+            closeBkcModal();
+        }
+
+    });
+
+    document.addEventListener("keydown", function (e) {
+
+        if (e.key === "Escape") {
+            closeBkcModal();
+        }
+
+    });
+
+}
+
+/* ==========================================
+   FAQ ACCORDION
+========================================== */
+
+document.querySelectorAll(".faq-question").forEach(function (button) {
+
+    button.addEventListener("click", function () {
+
+        const item = button.closest(".faq-item");
+        const answer = item.querySelector(".faq-answer");
+        const isOpen = item.classList.contains("open");
+
+        // Close every other open item, so only one is expanded at a time
+
+        document.querySelectorAll(".faq-item.open").forEach(function (openItem) {
+
+            if (openItem !== item) {
+
+                openItem.classList.remove("open");
+                openItem.querySelector(".faq-answer").style.maxHeight = null;
+
+            }
+
+        });
+
+        if (isOpen) {
+
+            item.classList.remove("open");
+            answer.style.maxHeight = null;
+
+        } else {
+
+            item.classList.add("open");
+            answer.style.maxHeight = answer.scrollHeight + "px";
+
+        }
+
+    });
+
+});

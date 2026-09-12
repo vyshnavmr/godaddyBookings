@@ -603,3 +603,15 @@
     }
 
 }
+
+.rd-hint{
+
+    display:block;
+
+    color:var(--ink-soft);
+
+    font-size:12px;
+
+    margin-top:6px;
+
+}

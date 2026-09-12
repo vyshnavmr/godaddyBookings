@@ -31,35 +31,123 @@ $check_out = trim($_POST['check_out'] ?? "");
 
 $guests = (int)($_POST['guests'] ?? 1);
 
-$full_name = trim($_POST['full_name'] ?? "");
+$rooms = (int)($_POST['rooms'] ?? 1);
 
-$email = trim($_POST['email'] ?? "");
+/*====================================================
+CLAMP GUESTS/ROOMS - the client-side <select> dropdowns
+only ever offer 1-5, but this endpoint can be POSTed to
+directly, so the same bounds are enforced here too.
+====================================================*/
 
-$phone = trim($_POST['phone'] ?? "");
+if ($guests < 1) {
+    $guests = 1;
+}
 
-$password = $_POST['password'] ?? "";
+if ($guests > 20) {
+    $guests = 20;
+}
+
+if ($rooms < 1) {
+    $rooms = 1;
+}
+
+if ($rooms > 10) {
+    $rooms = 10;
+}
 
 $bookingRedirect = "booking.php?property_id=$property_id&room_id=$room_id&check_in=" .
-    urlencode($check_in) . "&check_out=" . urlencode($check_out) . "&guests=$guests";
+    urlencode($check_in) . "&check_out=" . urlencode($check_out) . "&guests=$guests&rooms=$rooms";
+
+/*====================================================
+CSRF CHECK
+====================================================*/
+
+if (
+    !isset($_POST['csrf_token']) ||
+    !isset($_SESSION['csrf_token']) ||
+    !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
+) {
+
+    $_SESSION['booking_errors'] = ["Your session has expired. Please try again."];
+
+    header("Location: " . $bookingRedirect);
+
+    exit();
+
+}
+
+
+
+/*====================================================
+LOGGED-IN USER? - if their session points at a real
+account, skip registration entirely and book as them.
+====================================================*/
+
+$existingUser = null;
+
+if (isset($_SESSION['user_id'])) {
+
+    $sql = "SELECT id, name, email, phone FROM users WHERE id = ?";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param($stmt, "i", $_SESSION['user_id']);
+
+    mysqli_stmt_execute($stmt);
+
+    $existingUser = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+
+    if (!$existingUser) {
+
+        unset($_SESSION['user_id']);
+        unset($_SESSION['user_name']);
+
+    }
+
+}
+
+$isLoggedIn = $existingUser !== null;
 
 
 /*====================================================
 VALIDATE BASIC FIELDS
+
+Guest checkout needs name/email/phone/password. Logged-in
+users already have all of this on file - skip straight to
+the booking-level checks.
 ====================================================*/
 
 $errors = [];
 
-if ($full_name == "")
-    $errors[] = "Full name is required.";
+if ($isLoggedIn) {
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL))
-    $errors[] = "Please enter a valid email address.";
+    $full_name = $existingUser['name'];
+    $email = $existingUser['email'];
+    $phone = $existingUser['phone'];
 
-if (!preg_match('/^[0-9]{10}$/', $phone))
-    $errors[] = "Please enter a valid 10-digit mobile number.";
+} else {
 
-if (strlen($password) < 8)
-    $errors[] = "Password must be at least 8 characters.";
+    $full_name = trim($_POST['full_name'] ?? "");
+
+    $email = trim($_POST['email'] ?? "");
+
+    $phone = trim($_POST['phone'] ?? "");
+
+    $password = $_POST['password'] ?? "";
+
+    if ($full_name == "")
+        $errors[] = "Full name is required.";
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL))
+        $errors[] = "Please enter a valid email address.";
+
+    if (!preg_match('/^[0-9]{10}$/', $phone))
+        $errors[] = "Please enter a valid 10-digit mobile number.";
+
+    if (strlen($password) < 8)
+        $errors[] = "Password must be at least 8 characters.";
+
+}
 
 if ($property_id <= 0 || $room_id <= 0 || $check_in == "" || $check_out == "") {
     $errors[] = "Missing booking details. Please start your booking again.";
@@ -114,6 +202,32 @@ if (!$property || !$room) {
 
 }
 
+
+/*====================================================
+VALIDATE GUESTS AGAINST THIS ROOM'S ACTUAL CAPACITY -
+the early clamp only guards against garbage/absurd values;
+this checks the real per-room limit now that $room is loaded.
+====================================================*/
+
+$maxGuestsForRoom = (int)$room['max_guests'];
+
+$maxTotalGuests = $maxGuestsForRoom * $rooms;
+
+if ($maxGuestsForRoom > 0 && $guests > $maxTotalGuests) {
+
+    $_SESSION['booking_errors'] = [
+
+        "This room type allows a maximum of $maxGuestsForRoom guest" . ($maxGuestsForRoom > 1 ? 's' : '') . " per room ($maxTotalGuests total for $rooms room" . ($rooms > 1 ? 's' : '') . "). Please adjust your guest count."
+
+    ];
+
+    header("Location: " . $bookingRedirect);
+
+    exit();
+
+}
+
+
 $inDate = DateTime::createFromFormat("Y-m-d", $check_in);
 
 $outDate = DateTime::createFromFormat("Y-m-d", $check_out);
@@ -132,28 +246,47 @@ $nights = $outDate->diff($inDate)->days;
 
 $discountedRate = $room['discounted_price'] ?? $room['price'];
 
-$totalPrice = $discountedRate * $nights;
+$totalPrice = $discountedRate * $nights * $rooms;
 
 
 /*====================================================
-CHECK EMAIL UNIQUENESS
+CHECK EMAIL/PHONE UNIQUENESS - guest checkout only, since
+a logged-in user is obviously already registered. Checks
+both fields, matching how login.php looks users up (by
+email OR phone) - otherwise two guest bookings with the
+same phone but different emails could create two accounts
+sharing one phone number.
 ====================================================*/
 
-$sql = "SELECT id FROM users WHERE email=?";
+if (!$isLoggedIn) {
 
-$stmt = mysqli_prepare($conn, $sql);
+    $sql = "SELECT id, email, phone FROM users WHERE email=? OR phone=?";
 
-mysqli_stmt_bind_param($stmt, "s", $email);
+    $stmt = mysqli_prepare($conn, $sql);
 
-mysqli_stmt_execute($stmt);
+    mysqli_stmt_bind_param($stmt, "ss", $email, $phone);
 
-if (mysqli_num_rows(mysqli_stmt_get_result($stmt)) > 0) {
+    mysqli_stmt_execute($stmt);
 
-    $_SESSION['booking_errors'] = ["This email is already registered. Please log in instead."];
+    $existingMatch = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
 
-    header("Location: " . $bookingRedirect);
+    if ($existingMatch) {
 
-    exit();
+        if (strcasecmp($existingMatch['email'], $email) === 0) {
+
+            $_SESSION['booking_errors'] = ["This email is already registered. Please log in instead."];
+
+        } else {
+
+            $_SESSION['booking_errors'] = ["This mobile number is already registered. Please log in instead."];
+
+        }
+
+        header("Location: " . $bookingRedirect);
+
+        exit();
+
+    }
 
 }
 
@@ -167,24 +300,33 @@ mysqli_begin_transaction($conn);
 try {
 
     /*====================================================
-    CREATE USER ACCOUNT
+    CREATE USER ACCOUNT - skipped entirely for logged-in
+    users, who already have a user_id from their session.
     ====================================================*/
 
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+    if ($isLoggedIn) {
 
-    $sql = "INSERT INTO users(name, email, phone, password) VALUES(?,?,?,?)";
+        $user_id = $existingUser['id'];
 
-    $stmt = mysqli_prepare($conn, $sql);
+    } else {
 
-    mysqli_stmt_bind_param($stmt, "ssss", $full_name, $email, $phone, $hashedPassword);
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-    if (!mysqli_stmt_execute($stmt)) {
+        $sql = "INSERT INTO users(name, email, phone, password) VALUES(?,?,?,?)";
 
-        throw new Exception(mysqli_error($conn));
+        $stmt = mysqli_prepare($conn, $sql);
+
+        mysqli_stmt_bind_param($stmt, "ssss", $full_name, $email, $phone, $hashedPassword);
+
+        if (!mysqli_stmt_execute($stmt)) {
+
+            throw new Exception(mysqli_error($conn));
+
+        }
+
+        $user_id = mysqli_insert_id($conn);
 
     }
-
-    $user_id = mysqli_insert_id($conn);
 
 
     /*====================================================
@@ -213,6 +355,8 @@ try {
 
     guests,
 
+    rooms,
+
     total_price,
 
     booking_status,
@@ -223,7 +367,7 @@ try {
 
     VALUES(
 
-    ?,?,?,?,?,?,?,?,?,?
+    ?,?,?,?,?,?,?,?,?,?,?
 
     )
 
@@ -235,7 +379,7 @@ try {
 
         $stmt,
 
-        "iisissidss",
+        "iisissiidss",
 
         $property_id,
         $room_id,
@@ -244,6 +388,7 @@ try {
         $check_in,
         $check_out,
         $guests,
+        $rooms,
         $totalPrice,
         $booking_status,
         $payment_status
@@ -260,14 +405,23 @@ try {
 
 
     /*====================================================
-    COMMIT + LOG THE USER IN
+    COMMIT
+
+    Logged-in users already have a session - nothing to
+    set. Guests get logged in as the account we just made.
     ====================================================*/
 
     mysqli_commit($conn);
 
-    $_SESSION['user_id'] = $user_id;
+    unset($_SESSION['csrf_token']);
 
-    $_SESSION['user_name'] = $full_name;
+    if (!$isLoggedIn) {
+
+        $_SESSION['user_id'] = $user_id;
+
+        $_SESSION['user_name'] = $full_name;
+
+    }
 
     header("Location: index.php?booking_confirmed=1");
 

@@ -1,0 +1,17 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /config/
+Disallow: /booking.php
+Disallow: /booking-save.php
+Disallow: /login.php
+Disallow: /login-save.php
+Disallow: /signup.php
+Disallow: /signup-save.php
+Disallow: /logout.php
+Disallow: /forgot-password.php
+Disallow: /cancel-booking.php
+Disallow: /current-booking.php
+
+Allow: /
+
+Sitemap: https://YOURDOMAIN.com/sitemap.php

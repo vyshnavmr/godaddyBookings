@@ -24,6 +24,16 @@ if ($rooms < 1) {
     $rooms = 1;
 }
 
+/*====================================================
+CSRF TOKEN
+====================================================*/
+
+if (empty($_SESSION['csrf_token'])) {
+
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+
+}
+
 $errors = [];
 
 $formErrors = [];
@@ -46,6 +56,38 @@ if ($property_id <= 0 || $room_id <= 0) {
 
 if ($check_in == "" || $check_out == "") {
     $errors[] = "Please select both a check-in and check-out date.";
+}
+
+
+/*====================================================
+LOGGED-IN USER? - if so, skip the registration form
+and book directly against their existing account.
+====================================================*/
+
+$loggedInUser = null;
+
+if (isset($_SESSION['user_id'])) {
+
+    $sql = "SELECT id, name, email, phone FROM users WHERE id = ?";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param($stmt, "i", $_SESSION['user_id']);
+
+    mysqli_stmt_execute($stmt);
+
+    $loggedInUser = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+
+    /* Session pointed at a user_id that no longer exists in
+       the DB - treat as logged out rather than trusting it */
+
+    if (!$loggedInUser) {
+
+        unset($_SESSION['user_id']);
+        unset($_SESSION['user_name']);
+
+    }
+
 }
 
 
@@ -241,17 +283,37 @@ include "includes/header.php";
 
                     <div class="bk-card-body">
 
-                        <p class="bk-card-subtitle">We'll use these details to share your booking information.</p>
+                        <?php if ($loggedInUser) { ?>
 
-                        <p class="bk-login-prompt">
+                            <p class="bk-card-subtitle">Confirm your details before booking.</p>
 
-                            Already registered?
+                            <p class="bk-login-prompt">
 
-                            <a href="login.php?redirect=<?= urlencode($_SERVER['REQUEST_URI']); ?>">Log in</a>
+                                Booking as <strong><?= htmlspecialchars($loggedInUser['name']); ?></strong>
 
-                            instead.
+                                (<?= htmlspecialchars($loggedInUser['email']); ?>).
 
-                        </p>
+                                Not you?
+
+                                <a href="logout.php?redirect=<?= urlencode($_SERVER['REQUEST_URI']); ?>">Log out</a>
+
+                            </p>
+
+                        <?php } else { ?>
+
+                            <p class="bk-card-subtitle">We'll use these details to share your booking information.</p>
+
+                            <p class="bk-login-prompt">
+
+                                Already registered?
+
+                                <a href="login.php?redirect=<?= urlencode($_SERVER['REQUEST_URI']); ?>">Log in</a>
+
+                                instead.
+
+                            </p>
+
+                        <?php } ?>
 
                         <form action="booking-save.php" method="POST" id="bookingDetailsForm">
 
@@ -267,57 +329,63 @@ include "includes/header.php";
 
                             <input type="hidden" name="rooms" value="<?= $rooms; ?>">
 
-                            <div class="bk-form-row">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']); ?>">
 
-                                <div class="bk-form-group">
+                            <?php if (!$loggedInUser) { ?>
 
-                                    <label>Full Name</label>
+                                <div class="bk-form-row">
 
-                                    <input type="text" name="full_name" placeholder="Enter first and last name" required>
+                                    <div class="bk-form-group">
 
-                                </div>
+                                        <label>Full Name</label>
 
-                                <div class="bk-form-group">
+                                        <input type="text" name="full_name" placeholder="Enter first and last name" required>
 
-                                    <label>Email Address</label>
+                                    </div>
 
-                                    <input type="email" name="email" placeholder="name@abc.com" required>
+                                    <div class="bk-form-group">
 
-                                </div>
+                                        <label>Email Address</label>
 
-                            </div>
-
-                            <div class="bk-form-row">
-
-                                <div class="bk-form-group">
-
-                                    <label>Mobile Number</label>
-
-                                    <div class="bk-phone-group">
-
-                                        <span class="bk-phone-prefix">+91</span>
-
-                                        <input type="tel" name="phone" placeholder="e.g. 1234567890" pattern="[0-9]{10}" required>
+                                        <input type="email" name="email" placeholder="name@abc.com" required>
 
                                     </div>
 
                                 </div>
 
-                                <div class="bk-form-group">
+                                <div class="bk-form-row">
 
-                                    <label>Password</label>
+                                    <div class="bk-form-group">
 
-                                    <input type="password" name="password" placeholder="Create a password" minlength="8" required>
+                                        <label>Mobile Number</label>
 
-                                    <small class="bk-hint">This creates your account so you can track this booking later.</small>
+                                        <div class="bk-phone-group">
+
+                                            <span class="bk-phone-prefix">+91</span>
+
+                                            <input type="tel" name="phone" placeholder="e.g. 1234567890" pattern="[0-9]{10}" required>
+
+                                        </div>
+
+                                    </div>
+
+                                    <div class="bk-form-group">
+
+                                        <label>Password</label>
+
+                                        <input type="password" name="password" placeholder="Create a password" minlength="8" required>
+
+                                        <small class="bk-hint">This creates your account so you can track this booking later.</small>
+
+                                    </div>
 
                                 </div>
 
-                            </div>
+                            <?php } ?>
 
                             <button type="submit" class="bk-submit-btn" <?= !empty($errors) ? 'disabled' : ''; ?>>
 
-                                Confirm &amp; Pay ₹<?= number_format($payableAmount, 0); ?>
+                                Confirm Booking Request — ₹<?= number_format($payableAmount, 0); ?>
 
                             </button>
 

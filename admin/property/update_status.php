@@ -37,7 +37,7 @@ $value = trim($_POST['value'] ?? "");
 
 $allowedFields = [
 
-    "booking_status" => ["Booked", "Pending", "Cancelled"],
+    "booking_status" => ["Booked", "Pending", "Cancellation Requested", "Cancelled"],
 
     "payment_status" => ["Paid", "Unpaid", "Refunded"]
 

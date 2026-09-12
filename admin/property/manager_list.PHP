@@ -7,129 +7,72 @@ if (!isset($_SESSION['admin_id'])) {
     exit();
 }
 
+/* Only the main admin manages managers - a manager account
+   should never reach this page even if they guess the URL */
+
+if (isset($_SESSION['is_manager']) && (int)$_SESSION['is_manager'] === 1) {
+    header("Location: ../dashboard.php");
+    exit();
+}
+
 require_once "../../config/db.php";
 
+require_once "../../config/crypto.php";
+
+
 /*====================================================
-MANAGER SCOPE
+FLASH MESSAGES
 ====================================================*/
 
-$isRestrictedManager = isset($_SESSION['is_manager']) && (int)$_SESSION['is_manager'] === 1;
+$successMessage = null;
+$errorMessage = null;
 
-$managerPropertyIds = $_SESSION['manager_property_ids'] ?? [];
+if (isset($_SESSION['manager_success'])) {
+    $successMessage = $_SESSION['manager_success'];
+    unset($_SESSION['manager_success']);
+}
 
-/* Allowed status values for each editable field */
-
-$statusOptions = ["Booked", "Pending", "Cancelled"];
-
-$paymentOptions = ["Paid", "Unpaid", "Refunded"];
-
-
-/*====================================================
-SEARCH & FILTERS
-====================================================*/
-
-$searchProperty = trim($_GET['search_property'] ?? "");
-
-$searchCustomer = trim($_GET['search_customer'] ?? "");
-
-$searchDate     = trim($_GET['search_date'] ?? "");
-
-$searchStatus   = trim($_GET['search_status'] ?? "");
-
-$dateError = "";
+if (isset($_SESSION['manager_error'])) {
+    $errorMessage = $_SESSION['manager_error'];
+    unset($_SESSION['manager_error']);
+}
 
 
 /*====================================================
-BOOKING QUERY
+MANAGER LIST - each with the properties they manage
 ====================================================*/
 
 $sql = "
 
 SELECT
 
-b.*,
+a.id,
 
-p.title AS property_title,
+a.name,
 
-p.property_code
+a.email,
 
-FROM bookings b
+a.encrypted_password,
 
-INNER JOIN properties p
+a.created_at,
 
-ON b.property_id = p.id
+GROUP_CONCAT(p.title SEPARATOR ', ') AS property_titles,
 
-WHERE 1=1
+COUNT(pm.property_id) AS property_count
+
+FROM admins a
+
+LEFT JOIN property_managers pm ON pm.admin_id = a.id
+
+LEFT JOIN properties p ON p.id = pm.property_id
+
+WHERE a.is_manager = 1
+
+GROUP BY a.id
+
+ORDER BY a.name ASC
 
 ";
-
-
-/* Managers only ever see bookings for their own properties */
-
-if ($isRestrictedManager) {
-
-    if (!empty($managerPropertyIds)) {
-
-        $idList = implode(",", array_map("intval", $managerPropertyIds));
-
-        $sql .= " AND b.property_id IN ($idList)";
-
-    } else {
-
-        $sql .= " AND b.property_id = 0";
-
-    }
-
-}
-
-
-if ($searchProperty != "") {
-
-    $escaped = mysqli_real_escape_string($conn, $searchProperty);
-
-    $sql .= " AND (p.title LIKE '%$escaped%' OR p.property_code LIKE '%$escaped%')";
-
-}
-
-
-if ($searchCustomer != "") {
-
-    $escaped = mysqli_real_escape_string($conn, $searchCustomer);
-
-    $sql .= " AND b.user_name LIKE '%$escaped%'";
-
-}
-
-
-if ($searchDate != "") {
-
-    $parts = explode("/", $searchDate);
-
-    if (count($parts) === 3 && checkdate((int)$parts[1], (int)$parts[0], (int)$parts[2])) {
-
-        $sqlDate = sprintf("%04d-%02d-%02d", (int)$parts[2], (int)$parts[1], (int)$parts[0]);
-
-        $sql .= " AND ('$sqlDate' BETWEEN b.check_in AND b.check_out)";
-
-    } else {
-
-        $dateError = "Date must be in DD/MM/YYYY format.";
-
-    }
-
-}
-
-
-if ($searchStatus != "" && in_array($searchStatus, $statusOptions)) {
-
-    $escaped = mysqli_real_escape_string($conn, $searchStatus);
-
-    $sql .= " AND b.booking_status = '$escaped'";
-
-}
-
-
-$sql .= " ORDER BY b.check_in DESC";
 
 $result = mysqli_query($conn, $sql);
 
@@ -138,7 +81,7 @@ $result = mysqli_query($conn, $sql);
 RENDER PAGE
 ====================================================*/
 
-$currentPage = "bookings";
+$currentPage = "users";
 
 include "../includes/header.php";
 
@@ -147,121 +90,78 @@ include "../includes/header.php";
 <link rel="stylesheet" href="../assets/css/property-list.css">
 
 <style>
-    .badge.status-confirmed {
+    .alert {
+        padding: 14px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+
+    .alert.success {
         background: #e7f8ee;
         color: #1e7e42;
     }
 
-    .badge.status-pending {
-        background: #fff4e0;
-        color: #b8790a;
-    }
-
-    .badge.status-cancelled {
+    .alert.error {
         background: #fdeceb;
         color: #c0392b;
     }
 
-    .status-select {
-        padding: 6px 10px;
-        border-radius: 6px;
-        border: 1px solid #ddd;
-        font-size: 13px;
-        font-family: 'Poppins', sans-serif;
-        background: #fff;
-    }
-
-    .status-save-note {
-        font-size: 11px;
-        color: #1e7e42;
-        margin-left: 8px;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-
-    .status-save-note.show {
-        opacity: 1;
-    }
-
-    .filters {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .filters input,
-    .filters select {
-        font-family: 'Poppins', sans-serif;
-    }
-
-    .filters .search-customer {
-        flex: 2 1 240px;
-    }
-
-    .filters .search-property {
-        flex: 1 1 180px;
-    }
-
-    .filters .search-date {
-        flex: 0 1 150px;
-    }
-
-    .filters .search-status {
-        flex: 0 1 160px;
-    }
-
-    .filters .btn-search {
-        flex: 0 0 auto;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        width: auto;
-        padding: 12px 28px;
-        border: none;
-        border-radius: 8px;
-        background: #4a6cf7;
-        color: #fff;
-        font-family: 'Poppins', sans-serif;
-        font-weight: 600;
-        font-size: 14px;
-        cursor: pointer;
-        transition: background 0.15s ease;
-    }
-
-    .filters .btn-search:hover {
-        background: #3a5ce0;
-    }
-
-    @media (max-width: 768px) {
-
-        .filters {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .filters .search-customer,
-        .filters .search-property,
-        .filters .search-date,
-        .filters .search-status,
-        .filters .btn-search {
-            flex: 1 1 auto;
-            width: 100%;
-        }
-
-    }
-
-    .customer-cell {
+    .manager-cell {
         font-weight: 600;
         color: #333;
     }
 
-    .date-error {
-        color: #c0392b;
+    .property-tags {
+        color: #666;
+        font-size: 13px;
+    }
+
+    .no-properties {
+        color: #aaa;
+        font-style: italic;
+        font-size: 13px;
+    }
+
+    .password-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .password-mask {
+        font-family: monospace;
+        letter-spacing: 2px;
+        color: #888;
+    }
+
+    .btn-reveal {
+        background: none;
+        border: none;
+        color: #4a6cf7;
+        cursor: pointer;
         font-size: 12px;
-        margin-top: -8px;
-        margin-bottom: 12px;
+        padding: 4px 8px;
+    }
+
+    .btn-reveal:hover {
+        text-decoration: underline;
+    }
+
+    .btn-remove {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: none;
+        border: none;
+        color: #c0392b;
+        cursor: pointer;
+        font-size: 13px;
+        padding: 6px 10px;
+    }
+
+    .btn-remove:hover {
+        text-decoration: underline;
     }
 </style>
 
@@ -269,64 +169,27 @@ include "../includes/header.php";
 
     <div class="page-header">
 
-        <h1>Bookings</h1>
+        <h1>Property Managers</h1>
 
     </div>
 
-    <form method="GET" class="filters">
+    <?php if ($successMessage) { ?>
 
-        <input
-            type="text"
-            name="search_customer"
-            class="search-customer"
-            placeholder="Search Customer..."
-            value="<?= htmlspecialchars($searchCustomer); ?>">
-
-        <input
-            type="text"
-            name="search_property"
-            class="search-property"
-            placeholder="Search Property..."
-            value="<?= htmlspecialchars($searchProperty); ?>">
-
-        <input
-            type="text"
-            name="search_date"
-            class="search-date"
-            placeholder="DD/MM/YYYY"
-            value="<?= htmlspecialchars($searchDate); ?>">
-
-        <select name="search_status" class="search-status">
-
-            <option value="">All Statuses</option>
-
-            <?php foreach ($statusOptions as $status) { ?>
-
-                <option value="<?= $status; ?>" <?= ($searchStatus == $status) ? 'selected' : ''; ?>>
-
-                    <?= $status; ?>
-
-                </option>
-
-            <?php } ?>
-
-        </select>
-
-        <button type="submit" class="btn-search">
-
-            <i class="fa-solid fa-magnifying-glass"></i>
-
-            Search
-
-        </button>
-
-    </form>
-
-    <?php if ($dateError != "") { ?>
-
-        <div class="date-error"><?= htmlspecialchars($dateError); ?></div>
+        <div class="alert success"><?= htmlspecialchars($successMessage); ?></div>
 
     <?php } ?>
+
+    <?php if ($errorMessage) { ?>
+
+        <div class="alert error"><?= htmlspecialchars($errorMessage); ?></div>
+
+    <?php } ?>
+
+    <p style="color:#888; font-size:13px; margin-bottom:20px;">
+
+        Managers are created automatically when you add a Manager Email while adding or editing a property. This page lists existing managers and the properties they're linked to.
+
+    </p>
 
     <div class="table-container">
 
@@ -336,21 +199,17 @@ include "../includes/header.php";
 
                 <tr>
 
-                    <th>Customer</th>
+                    <th>Name</th>
 
-                    <th>Property</th>
+                    <th>Email</th>
 
-                    <th>Check In</th>
+                    <th>Password</th>
 
-                    <th>Check Out</th>
+                    <th>Properties Managed</th>
 
-                    <th>Guests</th>
+                    <th>Added</th>
 
-                    <th>Total Price</th>
-
-                    <th>Payment</th>
-
-                    <th>Status</th>
+                    <th>Action</th>
 
                 </tr>
 
@@ -360,75 +219,75 @@ include "../includes/header.php";
 
                 <?php if (mysqli_num_rows($result) > 0) { ?>
 
-                    <?php while ($booking = mysqli_fetch_assoc($result)) { ?>
+                    <?php while ($manager = mysqli_fetch_assoc($result)) { ?>
+
+                        <?php
+
+                        $plainPassword = "";
+
+                        if (!empty($manager['encrypted_password'])) {
+
+                            $plainPassword = decryptManagerPassword($manager['encrypted_password']);
+
+                        }
+
+                        ?>
 
                         <tr>
 
-                            <td class="customer-cell"><?= htmlspecialchars($booking['user_name']); ?></td>
+                            <td class="manager-cell"><?= htmlspecialchars($manager['name']); ?></td>
+
+                            <td><?= htmlspecialchars($manager['email']); ?></td>
 
                             <td>
 
-                                <div class="property-info">
+                                <?php if ($plainPassword) { ?>
 
-                                    <h4><?= htmlspecialchars($booking['property_title']); ?></h4>
+                                    <div class="password-cell">
 
-                                    <small><?= htmlspecialchars($booking['property_code']); ?></small>
+                                        <span class="password-mask" data-password="<?= htmlspecialchars($plainPassword); ?>">••••••••</span>
 
-                                </div>
+                                        <button type="button" class="btn-reveal">Show</button>
 
-                            </td>
+                                    </div>
 
-                            <td><?= date("d M Y", strtotime($booking['check_in'])); ?></td>
+                                <?php } else { ?>
 
-                            <td><?= date("d M Y", strtotime($booking['check_out'])); ?></td>
+                                    <span class="no-properties">—</span>
 
-                            <td><?= (int)$booking['guests']; ?></td>
-
-                            <td>₹<?= number_format($booking['total_price'], 2); ?></td>
-
-                            <td>
-
-                                <select
-                                    class="status-select"
-                                    data-booking-id="<?= $booking['id']; ?>"
-                                    data-field="payment_status">
-
-                                    <?php foreach ($paymentOptions as $payment) { ?>
-
-                                        <option value="<?= $payment; ?>" <?= ($booking['payment_status'] == $payment) ? 'selected' : ''; ?>>
-
-                                            <?= $payment; ?>
-
-                                        </option>
-
-                                    <?php } ?>
-
-                                </select>
-
-                                <span class="status-save-note">Updated</span>
+                                <?php } ?>
 
                             </td>
 
                             <td>
 
-                                <select
-                                    class="status-select"
-                                    data-booking-id="<?= $booking['id']; ?>"
-                                    data-field="booking_status">
+                                <?php if ($manager['property_count'] > 0) { ?>
 
-                                    <?php foreach ($statusOptions as $status) { ?>
+                                    <span class="property-tags"><?= htmlspecialchars($manager['property_titles']); ?></span>
 
-                                        <option value="<?= $status; ?>" <?= ($booking['booking_status'] == $status) ? 'selected' : ''; ?>>
+                                <?php } else { ?>
 
-                                            <?= $status; ?>
+                                    <span class="no-properties">No properties assigned</span>
 
-                                        </option>
+                                <?php } ?>
 
-                                    <?php } ?>
+                            </td>
 
-                                </select>
+                            <td><?= date("d M Y", strtotime($manager['created_at'])); ?></td>
 
-                                <span class="status-save-note">Updated</span>
+                            <td>
+
+                                <form action="manager_delete.php" method="POST" onsubmit="return confirm('Remove this manager account? This cannot be undone.');">
+
+                                    <input type="hidden" name="admin_id" value="<?= $manager['id']; ?>">
+
+                                    <button type="submit" class="btn-remove">
+
+                                        <i class="fa-solid fa-trash"></i> Remove
+
+                                    </button>
+
+                                </form>
 
                             </td>
 
@@ -440,15 +299,15 @@ include "../includes/header.php";
 
                     <tr>
 
-                        <td colspan="8">
+                        <td colspan="6">
 
                             <div class="empty-state">
 
-                                <i class="fa-solid fa-calendar-xmark"></i>
+                                <i class="fa-solid fa-users"></i>
 
-                                <h3>No Bookings Found</h3>
+                                <h3>No Managers Yet</h3>
 
-                                <p>Try adjusting your search filters.</p>
+                                <p>Add a Manager Email while creating or editing a property to create one.</p>
 
                             </div>
 
@@ -467,54 +326,16 @@ include "../includes/header.php";
 </div>
 
 <script>
-    document.querySelectorAll(".status-select").forEach(function (select) {
+    document.querySelectorAll(".btn-reveal").forEach(function (button) {
 
-        select.addEventListener("change", function () {
+        button.addEventListener("click", function () {
 
-            const bookingId = this.dataset.bookingId;
-            const field = this.dataset.field;
-            const newValue = this.value;
-            const note = this.nextElementSibling;
+            const mask = this.previousElementSibling;
+            const isHidden = mask.textContent === "••••••••";
 
-            this.disabled = true;
+            mask.textContent = isHidden ? mask.dataset.password : "••••••••";
 
-            fetch("update_status.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: "booking_id=" + encodeURIComponent(bookingId) +
-                      "&field=" + encodeURIComponent(field) +
-                      "&value=" + encodeURIComponent(newValue)
-            })
-
-                .then(function (res) { return res.json(); })
-
-                .then(function (data) {
-
-                    select.disabled = false;
-
-                    if (data.success) {
-
-                        note.classList.add("show");
-
-                        setTimeout(function () {
-                            note.classList.remove("show");
-                        }, 2000);
-
-                    } else {
-
-                        alert(data.message || "Failed to update status.");
-
-                    }
-
-                })
-
-                .catch(function () {
-
-                    select.disabled = false;
-
-                    alert("Failed to update status. Please try again.");
-
-                });
+            this.textContent = isHidden ? "Hide" : "Show";
 
         });
 

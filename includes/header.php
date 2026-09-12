@@ -1,6 +1,17 @@
 <?php
 
 /*====================================================
+ENSURE A SESSION EXISTS - header.php is included by pages
+that don't always call session_start() themselves (e.g.
+index.php, property-details.php), but the nav below needs
+to know if the person is logged in regardless of page.
+====================================================*/
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+/*====================================================
 DEFAULTS - so this still works even if a page forgets
 to set these before including header.php
 ====================================================*/
@@ -11,6 +22,16 @@ if (!isset($pageTitle)) {
 
 if (!isset($currentPage)) {
     $currentPage = "";
+}
+
+if (!isset($metaDescription)) {
+    $metaDescription = "Book verified resorts, villas, homestays, and cottages across Kerala's top destinations. Best prices, instant booking, 24/7 support.";
+}
+
+if (!isset($canonicalUrl)) {
+
+    $canonicalUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . strtok($_SERVER['REQUEST_URI'], '?');
+
 }
 
 /*====================================================
@@ -45,6 +66,23 @@ if (isset($conn)) {
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle); ?></title>
+
+    <meta name="description" content="<?= htmlspecialchars($metaDescription); ?>">
+
+    <link rel="canonical" href="<?= htmlspecialchars($canonicalUrl); ?>">
+    <link rel="icon" type="image/png" href="assets/images/logo-mb.png">
+    <link rel="apple-touch-icon" href="assets/images/logo-mb.png">
+
+    <!-- Open Graph (WhatsApp / Facebook link previews) -->
+    <meta property="og:title" content="<?= htmlspecialchars($pageTitle); ?>">
+    <meta property="og:description" content="<?= htmlspecialchars($metaDescription); ?>">
+    <meta property="og:image" content="<?= (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']; ?>/assets/images/logo-mb.png">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="<?= (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']; ?>">
+
+    <!-- Twitter Card (falls back to Open Graph values automatically on most platforms) -->
+    <meta name="twitter:card" content="summary_large_image">
+
     <link rel="preconnect"
         href="https://fonts.googleapis.com">
     <link rel="preconnect"
@@ -71,7 +109,7 @@ if (isset($conn)) {
 
 <body id="top">
     <!-- ================= NAVBAR ================= -->
-    <header class="<?= ($currentPage != 'home') ? 'header-solid' : ''; ?>">
+        <header class="<?= ($currentPage != 'home' || isset($_GET['booking_confirmed'])) ? 'header-solid' : ''; ?>">
         <div class="container nav-container">
             <div class="logo">
                 <img src="assets/images/logo-mb.png" alt="">
@@ -117,9 +155,32 @@ if (isset($conn)) {
                     <a href="index.php#destinations" class="<?= ($currentPage == 'destinations') ? 'active' : ''; ?>">Destinations</a>
                     <a href="index.php#why-us" class="<?= ($currentPage == 'about') ? 'active' : ''; ?>">About</a>
                     <a href="contact-us.php" class="<?= ($currentPage == 'contact') ? 'active' : ''; ?>">Contact</a>
+
+                    <?php if (isset($_SESSION['user_id'])) { ?>
+
+                        <a href="current-booking.php" class="<?= ($currentPage == 'my-bookings') ? 'active' : ''; ?>">My Bookings</a>
+
+                    <?php } ?>
+
                 </nav>
 
-                <a href="index.php#search-box" class="book-btn">
+                <div class="nav-account">
+
+                    <?php if (isset($_SESSION['user_id'])) { ?>
+
+                        <span class="nav-account-name"><i class="fa-solid fa-user"></i> <?= htmlspecialchars($_SESSION['user_name'] ?? 'Account'); ?></span>
+
+                        <a href="logout.php" class="nav-logout-link">Log Out</a>
+
+                    <?php } else { ?>
+
+                        <a href="login.php?redirect=<?= urlencode($_SERVER['REQUEST_URI']); ?>" class="nav-login-link">Log In</a>
+
+                    <?php } ?>
+
+                </div>
+
+                <a href="properties.php" class="book-btn">
                     Book Now
                 </a>
 

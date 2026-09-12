@@ -295,6 +295,16 @@ Managers
 
 </a>
 
+<a
+href="/WEBSITE/admin/property/reviews.php"
+class="<?= ($currentPage=="reviews") ? "active" : ""; ?>">
+
+<i class="fa-solid fa-users"></i>
+
+Reviews
+
+</a>
+
 <?php } ?>
 
 <a

@@ -19,7 +19,7 @@ $managerPropertyIds = $_SESSION['manager_property_ids'] ?? [];
 
 /* Allowed status values for each editable field */
 
-$statusOptions = ["Booked", "Pending", "Cancelled"];
+$statusOptions = ["Booked", "Pending", "Cancellation Requested", "Cancelled"];
 
 $paymentOptions = ["Paid", "Unpaid", "Refunded"];
 
@@ -344,7 +344,9 @@ include "../includes/header.php";
 
                     <?php while ($booking = mysqli_fetch_assoc($result)) { ?>
 
-                        <tr>
+                         <?php $isCancellationRequest = ($booking['booking_status'] === 'Cancellation Requested'); ?>
+
+                        <tr class="<?= $isCancellationRequest ? 'row-cancellation-requested' : ''; ?>">
 
                             <td class="customer-cell"><?= htmlspecialchars($booking['user_name']); ?></td>
 
@@ -394,7 +396,7 @@ include "../includes/header.php";
                             <td>
 
                                 <select
-                                    class="status-select"
+                                    class="status-select <?= $isCancellationRequest ? 'select-cancellation-requested' : ''; ?>"
                                     data-booking-id="<?= $booking['id']; ?>"
                                     data-field="booking_status">
 

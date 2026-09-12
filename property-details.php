@@ -1,5 +1,7 @@
 <?php
 
+session_start();
+
 require_once "config/db.php";
 
 /*====================================================
@@ -161,14 +163,136 @@ $startingPrice = $cheapestRoomPrice ?? $property['discounted_price'] ?? $propert
 
 
 /*====================================================
+REVIEWS
+====================================================*/
+
+$sql = "
+
+SELECT
+
+r.*,
+
+u.name AS reviewer_name
+
+FROM reviews r
+
+INNER JOIN users u ON r.user_id = u.id
+
+WHERE r.property_id = ?
+
+ORDER BY r.created_at DESC
+
+";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+mysqli_stmt_bind_param($stmt, "i", $id);
+
+mysqli_stmt_execute($stmt);
+
+$reviewsResult = mysqli_stmt_get_result($stmt);
+
+$reviews = [];
+
+while ($row = mysqli_fetch_assoc($reviewsResult)) {
+    $reviews[] = $row;
+}
+
+$reviewCount = count($reviews);
+
+$averageRating = $reviewCount > 0
+    ? array_sum(array_column($reviews, 'rating')) / $reviewCount
+    : null;
+
+
+/*====================================================
+CAN THE CURRENT USER LEAVE A REVIEW? - only if they have
+a completed stay (past check-out, not cancelled) at this
+property that they haven't already reviewed.
+====================================================*/
+
+$eligibleBookingId = null;
+
+if (isset($_SESSION['user_id'])) {
+
+    $sql = "
+
+    SELECT b.id
+
+    FROM bookings b
+
+    LEFT JOIN reviews r ON r.booking_id = b.id
+
+    WHERE b.property_id = ?
+
+    AND b.user_id = ?
+
+    AND b.check_out < CURDATE()
+
+    AND b.booking_status NOT IN ('Cancelled', 'Cancellation Requested')
+
+    AND r.id IS NULL
+
+    ORDER BY b.check_out DESC
+
+    LIMIT 1
+
+    ";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param($stmt, "ii", $id, $_SESSION['user_id']);
+
+    mysqli_stmt_execute($stmt);
+
+    $eligibleRow = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+
+    $eligibleBookingId = $eligibleRow['id'] ?? null;
+
+}
+
+
+/*====================================================
+CSRF TOKEN - for the review form
+====================================================*/
+
+if (empty($_SESSION['csrf_token'])) {
+
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+
+}
+
+
+/*====================================================
+FLASH MESSAGES FROM review-save.php
+====================================================*/
+
+$reviewMessage = null;
+$reviewError = null;
+
+if (isset($_SESSION['review_message'])) {
+    $reviewMessage = $_SESSION['review_message'];
+    unset($_SESSION['review_message']);
+}
+
+if (isset($_SESSION['review_error'])) {
+    $reviewError = $_SESSION['review_error'];
+    unset($_SESSION['review_error']);
+}
+
+/*====================================================
 RENDER PAGE
 ====================================================*/
 
 $pageTitle = htmlspecialchars($property['title']) . " - Godaddy Booking";
 
+$metaDescription = "Book " . htmlspecialchars($property['title']) . " in " . htmlspecialchars($property['destination_name']) . ". " . htmlspecialchars(mb_strimwidth(strip_tags($property['description'] ?? ''), 0, 140, '...'));
+
+$canonicalUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . "/property-details.php?id=" . $id;
+
 $currentPage = "properties";
 
-$pageCss = "assets/css/property-details.css";
+$pageCss = ["assets/css/property-details.css", "assets/css/booking.css"];
 
 include "includes/header.php";
 
@@ -266,6 +390,16 @@ include "includes/header.php";
                         <span class="badge"><?= htmlspecialchars($property['type_name']); ?></span>
 
                         <span class="badge"><i class="fa-solid fa-user-group"></i> Up to <?= (int)$property['max_guests']; ?> guests</span>
+
+                        <?php if ($averageRating !== null) { ?>
+
+                            <a href="#reviews" class="badge pd-rating-badge">
+
+                                <i class="fa-solid fa-star"></i> <?= number_format($averageRating, 1); ?> (<?= $reviewCount; ?> review<?= $reviewCount > 1 ? 's' : ''; ?>)
+
+                            </a>
+
+                        <?php } ?>
 
                     </div>
 
@@ -366,13 +500,14 @@ include "includes/header.php";
                                     <div class="pd-room-item">
 
                                         <label class="pd-room-card">
-
                                             <input
                                                 type="radio"
                                                 name="room_id"
                                                 value="<?= $room['id']; ?>"
                                                 class="pd-room-radio"
                                                 data-price="<?= $roomFinalPrice; ?>"
+                                                data-max-rooms="<?= max(1, (int)($room['rooms_available'] ?? 1)); ?>"
+                                                data-max-guests="<?= max(1, (int)$room['max_guests']); ?>"
                                                 <?= $index === 0 ? 'checked' : ''; ?>>
 
                                             <img class="pd-room-image" src="<?= htmlspecialchars($roomImage); ?>" alt="<?= htmlspecialchars($room['room_name']); ?>">
@@ -435,6 +570,114 @@ include "includes/header.php";
 
                 </div>
 
+                <!-- ===========================
+                     REVIEWS
+                ============================ -->
+
+                <div class="pd-section" id="reviews">
+
+                    <h2>Guest Reviews <?php if ($reviewCount > 0) { ?>(<?= $reviewCount; ?>)<?php } ?></h2>
+
+                    <?php if ($reviewMessage) { ?>
+
+                        <div class="bk-alert bk-alert-success"><?= htmlspecialchars($reviewMessage); ?></div>
+
+                    <?php } ?>
+
+                    <?php if ($reviewError) { ?>
+
+                        <div class="bk-alert bk-alert-error"><?= htmlspecialchars($reviewError); ?></div>
+
+                    <?php } ?>
+
+                    <?php if ($eligibleBookingId) { ?>
+
+                        <form action="review-save.php" method="POST" class="pd-review-form">
+
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']); ?>">
+
+                            <input type="hidden" name="property_id" value="<?= (int)$property['id']; ?>">
+
+                            <input type="hidden" name="booking_id" value="<?= (int)$eligibleBookingId; ?>">
+
+                            <label class="pd-review-form-label">Rate your stay</label>
+
+                            <div class="pd-star-input">
+
+                                <?php for ($s = 5; $s >= 1; $s--) { ?>
+
+                                    <input type="radio" name="rating" id="star<?= $s; ?>" value="<?= $s; ?>" required>
+                                    <label for="star<?= $s; ?>"><i class="fa-solid fa-star"></i></label>
+
+                                <?php } ?>
+
+                            </div>
+
+                            <textarea name="comment" placeholder="Tell other guests about your stay (optional)" maxlength="1000"></textarea>
+
+                            <button type="submit" class="bk-submit-btn" style="width:auto; padding:12px 28px;">Submit Review</button>
+
+                        </form>
+
+                    <?php } elseif (!isset($_SESSION['user_id'])) { ?>
+
+                        <p class="pd-review-note"><a href="login.php?redirect=<?= urlencode($_SERVER['REQUEST_URI']); ?>">Log in</a> after your stay to leave a review.</p>
+
+                    <?php } ?>
+
+                    <?php if (empty($reviews)) { ?>
+
+                        <p class="pd-no-rooms">No reviews yet. Be the first to share your experience.</p>
+
+                    <?php } else { ?>
+
+                        <div class="pd-reviews-list">
+
+                            <?php foreach ($reviews as $review) { ?>
+
+                                <div class="pd-review-card">
+
+                                    <div class="pd-review-avatar-row">
+
+                                        <div class="pd-review-avatar">
+
+                                            <i class="fa-solid fa-user"></i>
+
+                                        </div>
+
+                                        <strong><?= htmlspecialchars($review['reviewer_name']); ?></strong>
+
+                                    </div>
+
+                                    <div class="pd-review-stars">
+
+                                        <?php for ($s = 1; $s <= 5; $s++) { ?>
+
+                                            <i class="fa-solid fa-star <?= $s <= (int)$review['rating'] ? 'filled' : ''; ?>"></i>
+
+                                        <?php } ?>
+
+                                    </div>
+
+                                    <span class="pd-review-date">Reviewed on <?= date("j F Y", strtotime($review['created_at'])); ?></span>
+
+                                    <?php if (!empty($review['comment'])) { ?>
+
+                                        <p class="pd-review-comment"><?= nl2br(htmlspecialchars($review['comment'])); ?></p>
+
+                                    <?php } ?>
+
+                                </div>
+
+                            <?php } ?>
+
+                        </div>
+
+                    <?php } ?>
+
+                </div>
+
+
             </div>
 
             <!-- ===========================
@@ -455,7 +698,7 @@ include "includes/header.php";
 
                     </div>
 
-                    <div class="pd-booking-field">
+                                        <div class="pd-booking-field">
 
                         <label>Check In</label>
 
@@ -471,13 +714,17 @@ include "includes/header.php";
 
                     </div>
 
+                    <?php $defaultRoomForDropdown = $rooms[0] ?? null; ?>
+
                     <div class="pd-booking-field">
 
                         <label>Guests</label>
 
-                        <select form="bookingForm" name="guests">
+                        <?php $defaultGuestsMax = max(1, (int)($defaultRoomForDropdown['max_guests'] ?? $property['max_guests'])); ?>
 
-                            <?php for ($g = 1; $g <= (int)$property['max_guests']; $g++) { ?>
+                        <select form="bookingForm" name="guests" id="pdGuestsCount">
+
+                            <?php for ($g = 1; $g <= $defaultGuestsMax; $g++) { ?>
 
                                 <option value="<?= $g; ?>"><?= $g; ?> Guest<?= $g > 1 ? 's' : ''; ?></option>
 
@@ -491,9 +738,11 @@ include "includes/header.php";
 
                         <label>Rooms</label>
 
+                        <?php $maxRoomsAvailable = max(1, (int)($defaultRoomForDropdown['rooms_available'] ?? 1)); ?>
+
                         <select form="bookingForm" name="rooms" id="pdRoomsCount">
 
-                            <?php for ($r = 1; $r <= 5; $r++) { ?>
+                            <?php for ($r = 1; $r <= $maxRoomsAvailable; $r++) { ?>
 
                                 <option value="<?= $r; ?>"><?= $r; ?> Room<?= $r > 1 ? 's' : ''; ?></option>
 
@@ -501,11 +750,9 @@ include "includes/header.php";
 
                         </select>
 
+                        <small class="bk-hint" id="pdRoomsHint"></small>
+
                     </div>
-
-                    <div class="pd-booking-field">
-
-                        <label>Guests</label>
 
                     <button type="submit" form="bookingForm" class="pd-book-btn" <?= empty($rooms) ? 'disabled' : ''; ?>>
 

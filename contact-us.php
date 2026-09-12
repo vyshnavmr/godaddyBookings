@@ -47,6 +47,8 @@ RENDER PAGE
 
 $pageTitle = "Contact Us - Godaddy Booking";
 
+$metaDescription = "Get in touch with Godaddy Booking for questions about your stay or booking. Call, email, or message us on WhatsApp.";
+
 $currentPage = "contact";
 
 $pageCss = ["assets/css/booking.css", "assets/css/contact.css"];
