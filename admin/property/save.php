@@ -34,7 +34,8 @@ $title              = trim($_POST['title']);
 $destination_id_raw = $_POST['destination_id'] ?? "";
 $new_destination_name = trim($_POST['new_destination_name'] ?? "");
 
-$property_type_id   = (int)$_POST['property_type_id'];
+$property_type_id_raw = $_POST['property_type_id'] ?? "";
+$new_property_type_name = trim($_POST['new_property_type_name'] ?? "");
 
 $description        = trim($_POST['description']);
 $address            = trim($_POST['address']);
@@ -65,6 +66,8 @@ $amenities          = $_POST['amenities'] ?? [];
 
 $manager_email      = trim($_POST['manager_email'] ?? "");
 
+$manager_phone      = trim($_POST['manager_phone'] ?? "");
+
 
 /*====================================================
 VALIDATION
@@ -90,8 +93,17 @@ if ($destination_id_raw === "new") {
 
 }
 
-if($property_type_id<=0)
-    $errors[]="Select Property Type.";
+if ($property_type_id_raw === "new") {
+
+    if ($new_property_type_name === "") {
+        $errors[] = "Please enter a name for the new property type.";
+    }
+
+} elseif ((int)$property_type_id_raw <= 0) {
+
+    $errors[] = "Select Property Type.";
+
+}
 
 if($price<=0)
     $errors[]="Price must be greater than zero.";
@@ -104,6 +116,11 @@ if(empty($_FILES['cover_image']['name']))
 
 if ($manager_email != "" && !filter_var($manager_email, FILTER_VALIDATE_EMAIL)) {
     $errors[] = "Manager Email is not a valid email address.";
+}
+
+if ($manager_phone != "" && !preg_match('/^[0-9]{10}$/', $manager_phone)) {
+    $errors[] = "Manager Phone must be a valid 10-digit number.";
+}
 }
 
 if(count($errors)>0){
@@ -162,6 +179,30 @@ if ($destination_id_raw === "new") {
 
     } else {
 
+        /* Same space-insensitive near-match check as property types */
+
+        $strippedNewName = str_replace(' ', '', strtolower($new_destination_name));
+
+        $sql = "SELECT id, destination_name FROM destinations";
+
+        $allDestResult = mysqli_query($conn, $sql);
+
+        while ($existingRow = mysqli_fetch_assoc($allDestResult)) {
+
+            $strippedExisting = str_replace(' ', '', strtolower($existingRow['destination_name']));
+
+            if ($strippedExisting === $strippedNewName) {
+
+                $_SESSION['errors'][] = "A very similar destination already exists: \"" . htmlspecialchars($existingRow['destination_name']) . "\". Please select it from the dropdown instead of creating a new one.";
+
+                header("Location:add.php");
+
+                exit();
+
+            }
+
+        }
+
         $sql = "INSERT INTO destinations(destination_name, is_active) VALUES(?, 1)";
 
         $stmt = mysqli_prepare($conn, $sql);
@@ -188,6 +229,99 @@ if ($destination_id_raw === "new") {
 
 }
 
+/*====================================================
+RESOLVE PROPERTY TYPE - either an existing id from the
+dropdown, or a brand-new type typed in by the admin
+====================================================*/
+
+if ($property_type_id_raw === "new") {
+
+    $new_property_type_name = trim($new_property_type_name);
+
+    $new_property_type_name = rtrim($new_property_type_name, " ,.-");
+
+    $new_property_type_name = preg_replace('/\s+/', ' ', $new_property_type_name);
+
+    if ($new_property_type_name === "") {
+
+        $_SESSION['errors'][] = "Please enter a valid property type name.";
+
+        header("Location:add.php");
+
+        exit();
+
+    }
+
+    $sql = "SELECT id FROM property_types WHERE LOWER(type_name) = LOWER(?)";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param($stmt, "s", $new_property_type_name);
+
+    mysqli_stmt_execute($stmt);
+
+    $existingType = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+
+    if ($existingType) {
+
+        $property_type_id = (int)$existingType['id'];
+
+    } else {
+
+        /* No exact match - but check for a space-insensitive near-match
+           too (e.g. "Beach House" vs "Beachhouse"), which the exact
+           check above can't catch since they're genuinely different
+           strings, not just messy whitespace around the same one.
+           Block and point at the existing name rather than silently
+           guessing they're the same thing. */
+
+        $strippedNewName = str_replace(' ', '', strtolower($new_property_type_name));
+
+        $sql = "SELECT id, type_name FROM property_types";
+
+        $allTypesResult = mysqli_query($conn, $sql);
+
+        while ($existingRow = mysqli_fetch_assoc($allTypesResult)) {
+
+            $strippedExisting = str_replace(' ', '', strtolower($existingRow['type_name']));
+
+            if ($strippedExisting === $strippedNewName) {
+
+                $_SESSION['errors'][] = "A very similar property type already exists: \"" . htmlspecialchars($existingRow['type_name']) . "\". Please select it from the dropdown instead of creating a new one.";
+
+                header("Location:add.php");
+
+                exit();
+
+            }
+
+        }
+
+        $sql = "INSERT INTO property_types(type_name, is_active) VALUES(?, 1)";
+
+        $stmt = mysqli_prepare($conn, $sql);
+
+        mysqli_stmt_bind_param($stmt, "s", $new_property_type_name);
+
+        if (!mysqli_stmt_execute($stmt)) {
+
+            $_SESSION['errors'][] = "Failed to create the new property type.";
+
+            header("Location:add.php");
+
+            exit();
+
+        }
+
+        $property_type_id = mysqli_insert_id($conn);
+
+    }
+
+} else {
+
+    $property_type_id = (int)$property_type_id_raw;
+
+}
 
 /*====================================================
 CHECK PROPERTY CODE
@@ -742,13 +876,15 @@ if ($manager_email != "") {
 
         $encrypted_password = encryptManagerPassword($plain_password);
 
-        $sql = "
+    $sql = "
 
         INSERT INTO admins(
 
         name,
 
         email,
+
+        phone,
 
         password,
 
@@ -760,7 +896,7 @@ if ($manager_email != "") {
 
         VALUES(
 
-        ?,?,?,?,1
+        ?,?,?,?,?,1
 
         )
 
@@ -772,11 +908,13 @@ if ($manager_email != "") {
 
             $stmt,
 
-            "ssss",
+            "sssss",
 
             $manager_name,
 
             $manager_email,
+
+            $manager_phone,
 
             $hashed_password,
 

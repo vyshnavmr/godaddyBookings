@@ -22,11 +22,13 @@ if ($isRestrictedManager) {
 
     $managerPropertyIds = $_SESSION['manager_property_ids'] ?? [];
 
-    $properties = [];
+        $properties = [];
 
     $totalBookings = 0;
 
     $cancellationRequestCount = 0;
+
+    $managerRevenue = 0;
 
     if (!empty($managerPropertyIds)) {
 
@@ -53,6 +55,10 @@ if ($isRestrictedManager) {
         $cancelSql = "SELECT COUNT(*) total FROM bookings WHERE booking_status = 'Cancellation Requested' AND property_id IN ($idList)";
 
         $cancellationRequestCount = mysqli_fetch_assoc(mysqli_query($conn, $cancelSql))['total'];
+
+        $revenueSql = "SELECT COALESCE(SUM(total_price), 0) total FROM bookings WHERE payment_status = 'Paid' AND property_id IN ($idList)";
+
+        $managerRevenue = mysqli_fetch_assoc(mysqli_query($conn, $revenueSql))['total'];
 
     }
 
@@ -219,6 +225,14 @@ if ($isRestrictedManager) {
 
                 </div>
 
+                <div class="manager-summary-card">
+
+                    <h3>Revenue (Paid)</h3>
+
+                    <h2>₹<?= number_format($managerRevenue, 0); ?></h2>
+
+                </div>
+
                 <?php if ($cancellationRequestCount > 0) { ?>
 
                     <div class="manager-summary-card" style="border-left:4px solid #d97706;">
@@ -343,6 +357,11 @@ $propertyCount = mysqli_fetch_assoc(mysqli_query(
     "SELECT COUNT(*) total FROM properties"
 ))['total'];
 
+$bookingCount = mysqli_fetch_assoc(mysqli_query(
+    $conn,
+    "SELECT COUNT(*) total FROM bookings"
+))['total'];
+
 $destinationCount = mysqli_fetch_assoc(mysqli_query(
     $conn,
     "SELECT COUNT(*) total FROM destinations"
@@ -358,9 +377,9 @@ $amenityCount = mysqli_fetch_assoc(mysqli_query(
     "SELECT COUNT(*) total FROM amenities"
 ))['total'];
 
-$bookingCount = mysqli_fetch_assoc(mysqli_query(
+$totalRevenue = mysqli_fetch_assoc(mysqli_query(
     $conn,
-    "SELECT COUNT(*) total FROM bookings"
+    "SELECT COALESCE(SUM(total_price), 0) total FROM bookings WHERE payment_status = 'Paid'"
 ))['total'];
 
 $cancellationRequestCount = mysqli_fetch_assoc(mysqli_query(
@@ -412,7 +431,7 @@ CONTENT
 
             </div>
 
-                        <div class="card">
+            <div class="card">
 
                 <i class="fa-solid fa-calendar-check"></i>
 
@@ -425,6 +444,24 @@ CONTENT
                 <h2>
 
                     <?php echo $bookingCount; ?>
+
+                </h2>
+
+            </div>
+
+            <div class="card">
+
+                <i class="fa-solid fa-indian-rupee-sign"></i>
+
+                <h3>
+
+                    Revenue (Paid)
+
+                </h3>
+
+                <h2>
+
+                    ₹<?php echo number_format($totalRevenue, 0); ?>
 
                 </h2>
 
@@ -501,24 +538,6 @@ CONTENT
                 <h2>
 
                     <?php echo $amenityCount; ?>
-
-                </h2>
-
-            </div>
-
-            <div class="card">
-
-                <i class="fa-solid fa-calendar-check"></i>
-
-                <h3>
-
-                    Bookings
-
-                </h3>
-
-                <h2>
-
-                    <?php echo $bookingCount; ?>
 
                 </h2>
 

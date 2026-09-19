@@ -1,8 +1,9 @@
 <?php
 
+require_once "config/db.php";
+
 session_start();
 
-require_once "config/db.php";
 
 /*====================================================
 READ BOOKING PARAMS

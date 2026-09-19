@@ -371,3 +371,261 @@
     font-style:italic;
 
 }
+
+/* ===========================================================
+   BOOKING RECEIPT PAGE
+=========================================================== */
+
+.receipt-wrap{
+
+    max-width:640px;
+
+    margin:0 auto;
+
+}
+
+.bk-card-header{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+}
+
+.receipt-property-row{
+
+    display:flex;
+
+    gap:18px;
+
+    padding-bottom:24px;
+
+    margin-bottom:24px;
+
+    border-bottom:1px solid var(--line);
+
+}
+
+.receipt-property-row img{
+
+    width:100px;
+
+    height:80px;
+
+    object-fit:cover;
+
+    border-radius:10px;
+
+    flex-shrink:0;
+
+}
+
+.receipt-property-row h3{
+
+    font-family:'Fraunces',serif;
+
+    font-size:18px;
+
+    font-weight:600;
+
+    color:var(--ink);
+
+    margin-bottom:6px;
+
+}
+
+.receipt-location{
+
+    color:var(--ink-soft);
+
+    font-size:13px;
+
+    margin-bottom:4px;
+
+}
+
+.receipt-address{
+
+    color:var(--ink-soft);
+
+    font-size:12px;
+
+    line-height:1.5;
+
+}
+
+.receipt-details-grid{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:16px;
+
+    margin-bottom:24px;
+
+}
+
+.receipt-detail-item{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:4px;
+
+}
+
+.receipt-label{
+
+    font-size:11px;
+
+    text-transform:uppercase;
+
+    letter-spacing:.04em;
+
+    color:var(--ink-soft);
+
+}
+
+.receipt-value{
+
+    font-size:14px;
+
+    font-weight:600;
+
+    color:var(--ink);
+
+}
+
+.receipt-payment-status{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    margin-top:14px;
+
+    padding-top:14px;
+
+    border-top:1px solid var(--line);
+
+    font-size:14px;
+
+    color:var(--ink);
+
+}
+
+.receipt-actions{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:16px;
+
+    margin-top:28px;
+
+}
+
+.receipt-print-btn{
+
+    width:auto;
+
+    padding:13px 28px;
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+}
+
+.receipt-view-property-link{
+
+    color:var(--red);
+
+    font-weight:600;
+
+    font-size:13px;
+
+}
+
+/* ===========================
+   PRINT
+============================ */
+
+@media print{
+
+    header,
+
+    footer,
+
+    .bk-back-link,
+
+    .receipt-actions,
+
+    .whatsapp-float{
+
+        display:none !important;
+
+    }
+
+    .bk-page{
+
+        padding:0;
+
+    }
+
+    .bk-card{
+
+        box-shadow:none;
+
+        border:none;
+
+    }
+
+}
+
+/* ===========================
+   RESPONSIVE
+============================ */
+
+@media(max-width:500px){
+
+    .receipt-details-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .receipt-property-row{
+
+        flex-direction:column;
+
+    }
+
+    .receipt-property-row img{
+
+        width:100%;
+
+        height:140px;
+
+    }
+
+    .receipt-actions{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+    }
+
+}

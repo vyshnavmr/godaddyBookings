@@ -1,8 +1,9 @@
 <?php
 
+require_once "config/db.php";
+
 session_start();
 
-require_once "config/db.php";
 
 /*====================================================
 CHECK REQUEST
@@ -243,6 +244,63 @@ if (!$inDate || !$outDate || $outDate <= $inDate) {
 }
 
 $nights = $outDate->diff($inDate)->days;
+
+
+/*====================================================
+CHECK ROOM AVAILABILITY - date-aware. Sums rooms already
+booked (excluding Cancelled) for this room type across any
+booking whose dates overlap the requested check-in/check-out,
+then checks that against total_rooms.
+====================================================*/
+
+$totalRoomsOfType = (int)($room['total_rooms'] ?? 0);
+
+$sql = "
+
+SELECT COALESCE(SUM(rooms), 0) AS booked_rooms
+
+FROM bookings
+
+WHERE room_id = ?
+
+AND booking_status NOT IN ('Cancelled')
+
+AND check_in < ?
+
+AND check_out > ?
+
+";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+mysqli_stmt_bind_param($stmt, "iss", $room_id, $check_out, $check_in);
+
+mysqli_stmt_execute($stmt);
+
+$overlapRow = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+
+$alreadyBooked = (int)$overlapRow['booked_rooms'];
+
+$availableForTheseDates = $totalRoomsOfType - $alreadyBooked;
+
+if ($rooms > $availableForTheseDates) {
+
+    $_SESSION['booking_errors'] = [
+
+        $availableForTheseDates > 0
+
+            ? "Only $availableForTheseDates room" . ($availableForTheseDates > 1 ? 's are' : ' is') . " available for these dates. Please reduce the number of rooms or choose different dates."
+
+            : "This room type is fully booked for these dates. Please choose different dates."
+
+    ];
+
+    header("Location: " . $bookingRedirect);
+
+    exit();
+
+}
+
 
 $discountedRate = $room['discounted_price'] ?? $room['price'];
 

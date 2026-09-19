@@ -3,6 +3,21 @@
 require_once "config/db.php";
 
 /*====================================================
+DEVICE DETECTION - server-side pagination needs to know
+how many properties to fetch per page BEFORE rendering,
+so this uses a basic user-agent check. Not perfectly
+accurate for every device, but a reasonable approximation
+for deciding grid density (2 cols mobile / 4 cols desktop).
+====================================================*/
+
+$userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+$isMobileDevice = (bool) preg_match('/Mobi|Android|iPhone|iPod/i', $userAgent);
+
+$perPage = $isMobileDevice ? 18 : 28;
+
+
+/*====================================================
 FILTERS FROM URL
 ====================================================*/
 
@@ -15,6 +30,12 @@ $destination_id = (int)($_GET['destination_id'] ?? 0);
 $type_id        = (int)($_GET['type_id'] ?? 0);
 
 $guests         = (int)($_GET['guests'] ?? 0);
+
+$priceMin       = trim($_GET['price_min'] ?? "");
+
+$priceMax       = trim($_GET['price_max'] ?? "");
+
+$page           = max(1, (int)($_GET['page'] ?? 1));
 
 $destinationName = "";
 
@@ -72,6 +93,8 @@ function buildFilterUrl($dropKey) {
 
     unset($params[$dropKey]);
 
+    unset($params['page']);
+
     $query = http_build_query($params);
 
     return "properties.php" . ($query != "" ? "?$query" : "");
@@ -80,12 +103,157 @@ function buildFilterUrl($dropKey) {
 
 
 /*====================================================
-PROPERTY QUERY
+BUILD PAGINATION LINKS - preserves every active filter,
+only changes the page number
+====================================================*/
 
-Only Available properties are shown to customers, same
-policy as the homepage. Discounted properties lead by
-default (highest discount first); an explicit sort choice
-from the toolbar overrides that default ordering.
+function buildPageUrl($pageNum) {
+
+    $params = $_GET;
+
+    $params['page'] = $pageNum;
+
+    return "properties.php?" . http_build_query($params);
+
+}
+
+
+/*====================================================
+SHARED WHERE CLAUSE - built once, reused for both the
+COUNT query (to know how many pages exist) and the main
+SELECT query (to fetch just this page's rows)
+====================================================*/
+
+$whereClause = " WHERE p.status = 'Available' ";
+
+if ($destination_id > 0) {
+
+    $whereClause .= " AND p.destination_id = " . $destination_id;
+
+}
+
+if ($type_id > 0) {
+
+    $whereClause .= " AND p.property_type_id = " . $type_id;
+
+}
+
+if ($guests > 0) {
+
+    $whereClause .= "
+
+    AND EXISTS (
+
+        SELECT 1 FROM property_rooms pr
+
+        WHERE pr.property_id = p.id
+
+        AND pr.status = 'Available'
+
+        AND pr.max_guests >= " . $guests . "
+
+    )";
+
+}
+
+if ($priceMin !== "" && is_numeric($priceMin)) {
+
+    $whereClause .= " AND COALESCE(p.discounted_price, p.price) >= " . (float)$priceMin;
+
+}
+
+if ($priceMax !== "" && is_numeric($priceMax)) {
+
+    $whereClause .= " AND COALESCE(p.discounted_price, p.price) <= " . (float)$priceMax;
+
+}
+
+if ($search != "") {
+
+    $escaped = mysqli_real_escape_string($conn, $search);
+
+    $whereClause .= "
+
+    AND (
+
+        p.title LIKE '%$escaped%'
+
+        OR d.destination_name LIKE '%$escaped%'
+
+        OR p.address LIKE '%$escaped%'
+
+        OR t.type_name LIKE '%$escaped%'
+
+    )";
+
+}
+
+
+/*====================================================
+COUNT TOTAL MATCHING PROPERTIES - needed to calculate
+how many pages exist, before fetching just this page's rows
+====================================================*/
+
+$countSql = "
+
+SELECT COUNT(*) AS total
+
+FROM properties p
+
+INNER JOIN destinations d ON p.destination_id = d.id
+
+INNER JOIN property_types t ON p.property_type_id = t.id
+
+" . $whereClause;
+
+$countResult = mysqli_query($conn, $countSql);
+
+$totalProperties = (int)(mysqli_fetch_assoc($countResult)['total'] ?? 0);
+
+$totalPages = max(1, (int)ceil($totalProperties / $perPage));
+
+if ($page > $totalPages) {
+
+    $page = $totalPages;
+
+}
+
+$offset = ($page - 1) * $perPage;
+
+
+/*====================================================
+ORDER BY
+====================================================*/
+
+$orderBy = "";
+
+switch ($sort) {
+
+    case "price_asc":
+        $orderBy = " ORDER BY p.discounted_price ASC";
+        break;
+
+    case "price_desc":
+        $orderBy = " ORDER BY p.discounted_price DESC";
+        break;
+
+    case "name_asc":
+        $orderBy = " ORDER BY p.title ASC";
+        break;
+
+    case "name_desc":
+        $orderBy = " ORDER BY p.title DESC";
+        break;
+
+    default:
+        $orderBy = " ORDER BY p.discount_percent DESC, p.title ASC";
+        break;
+
+}
+
+
+/*====================================================
+PROPERTY QUERY - this page's rows only, via LIMIT/OFFSET
 ====================================================*/
 
 $sql = "
@@ -106,94 +274,11 @@ INNER JOIN destinations d ON p.destination_id = d.id
 
 INNER JOIN property_types t ON p.property_type_id = t.id
 
-WHERE p.status = 'Available'
+" . $whereClause . $orderBy . "
+
+LIMIT $perPage OFFSET $offset
 
 ";
-
-if ($destination_id > 0) {
-
-    $sql .= " AND p.destination_id = " . $destination_id;
-
-}
-
-if ($type_id > 0) {
-
-    $sql .= " AND p.property_type_id = " . $type_id;
-
-}
-
-if ($guests > 0) {
-
-    $sql .= "
-
-    AND EXISTS (
-
-        SELECT 1 FROM property_rooms pr
-
-        WHERE pr.property_id = p.id
-
-        AND pr.status = 'Available'
-
-        AND pr.max_guests >= " . $guests . "
-
-    )";
-
-}
-
-if ($search != "") {
-
-    $escaped = mysqli_real_escape_string($conn, $search);
-
-    $sql .= "
-
-    AND (
-
-        p.title LIKE '%$escaped%'
-
-        OR d.destination_name LIKE '%$escaped%'
-
-        OR p.address LIKE '%$escaped%'
-
-
-        OR t.type_name LIKE '%$escaped%'
-
-    )";
-        
-}
-        // OR p.place LIKE '%$escaped%'
-        
-        // OR p.district LIKE '%$escaped%'
-        
-        // OR p.landmark LIKE '%$escaped%'
-        
-        // OR p.state LIKE '%$escaped%'
-        
-
-
-
-switch ($sort) {
-
-    case "price_asc":
-        $sql .= " ORDER BY p.discounted_price ASC";
-        break;
-
-    case "price_desc":
-        $sql .= " ORDER BY p.discounted_price DESC";
-        break;
-
-    case "name_asc":
-        $sql .= " ORDER BY p.title ASC";
-        break;
-
-    case "name_desc":
-        $sql .= " ORDER BY p.title DESC";
-        break;
-
-    default:
-        $sql .= " ORDER BY p.discount_percent DESC, p.title ASC";
-        break;
-
-}
 
 $result = mysqli_query($conn, $sql);
 
@@ -278,6 +363,18 @@ include "includes/header.php";
             </div>
 
             <div class="filter-group">
+
+                <div class="price-range-group">
+
+                    <i class="fa-solid fa-indian-rupee-sign price-range-icon"></i>
+
+                    <input type="number" name="price_min" class="price-range-input" placeholder="Min" min="0" value="<?= htmlspecialchars($priceMin); ?>">
+
+                    <span class="price-range-divider"></span>
+
+                    <input type="number" name="price_max" class="price-range-input" placeholder="Max" min="0" value="<?= htmlspecialchars($priceMax); ?>">
+
+                </div>
 
                 <label class="filter-label">
 
@@ -389,6 +486,91 @@ include "includes/header.php";
             <?php endforeach; ?>
 
         </div>
+
+        <?php if ($totalPages > 1) { ?>
+
+            <div class="pagination">
+
+                <?php if ($page > 1) { ?>
+
+                    <a href="<?= buildPageUrl($page - 1); ?>" class="pagination-btn pagination-prev">
+
+                        <i class="fa-solid fa-chevron-left"></i> Previous
+
+                    </a>
+
+                <?php } else { ?>
+
+                    <span class="pagination-btn pagination-disabled">
+
+                        <i class="fa-solid fa-chevron-left"></i> Previous
+
+                    </span>
+
+                <?php } ?>
+
+                <div class="pagination-numbers">
+
+                    <?php
+
+                    /* Show a window of page numbers around the current
+                       page, rather than every single page number when
+                       there are many - keeps the control usable even
+                       with dozens of pages */
+
+                    $windowStart = max(1, $page - 2);
+
+                    $windowEnd = min($totalPages, $page + 2);
+
+                    if ($windowStart > 1) { ?>
+
+                        <a href="<?= buildPageUrl(1); ?>" class="pagination-number">1</a>
+
+                        <?php if ($windowStart > 2) { ?>
+                            <span class="pagination-ellipsis">…</span>
+                        <?php } ?>
+
+                    <?php } ?>
+
+                    <?php for ($p = $windowStart; $p <= $windowEnd; $p++) { ?>
+
+                        <a href="<?= buildPageUrl($p); ?>" class="pagination-number <?= ($p == $page) ? 'active' : ''; ?>"><?= $p; ?></a>
+
+                    <?php } ?>
+
+                    <?php if ($windowEnd < $totalPages) { ?>
+
+                        <?php if ($windowEnd < $totalPages - 1) { ?>
+                            <span class="pagination-ellipsis">…</span>
+                        <?php } ?>
+
+                        <a href="<?= buildPageUrl($totalPages); ?>" class="pagination-number"><?= $totalPages; ?></a>
+
+                    <?php } ?>
+
+                </div>
+
+                <?php if ($page < $totalPages) { ?>
+
+                    <a href="<?= buildPageUrl($page + 1); ?>" class="pagination-btn pagination-next">
+
+                        Next <i class="fa-solid fa-chevron-right"></i>
+
+                    </a>
+
+                <?php } else { ?>
+
+                    <span class="pagination-btn pagination-disabled">
+
+                        Next <i class="fa-solid fa-chevron-right"></i>
+
+                    </span>
+
+                <?php } ?>
+
+            </div>
+
+        <?php } ?>
 
     </div>
 

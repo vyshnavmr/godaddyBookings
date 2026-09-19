@@ -151,6 +151,20 @@ include "../includes/header.php";
     .row-highlighted {
         background: #fff8e6;
     }
+
+        .btn-delete-review {
+        background: none;
+        border: none;
+        color: #c0392b;
+        cursor: pointer;
+        padding: 8px;
+        font-size: 14px;
+    }
+
+    .btn-delete-review:hover {
+        color: #a5321f;
+    }
+
 </style>
 
 <div class="container">
@@ -180,6 +194,8 @@ include "../includes/header.php";
                     <th>Date</th>
 
                     <th>Highlighted</th>
+
+                    <th>Delete</th>
 
                 </tr>
 
@@ -243,6 +259,16 @@ include "../includes/header.php";
 
                             </td>
 
+                            <td>
+
+                                <button type="button" class="btn-delete-review" data-review-id="<?= $review['id']; ?>">
+
+                                    <i class="fa-solid fa-trash"></i>
+
+                                </button>
+
+                            </td>
+
                         </tr>
 
                     <?php } ?>
@@ -251,7 +277,7 @@ include "../includes/header.php";
 
                     <tr>
 
-                        <td colspan="6">
+                        <td colspan="7">
 
                             <div class="empty-state">
 
@@ -330,6 +356,48 @@ include "../includes/header.php";
         });
 
     });
+
+        document.querySelectorAll(".btn-delete-review").forEach(function (button) {
+
+        button.addEventListener("click", function () {
+
+            if (!confirm("Delete this review permanently? This cannot be undone.")) {
+
+                return;
+
+            }
+
+            const reviewId = this.dataset.reviewId;
+            const row = this.closest("tr");
+
+            fetch("reviews_delete.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: "review_id=" + encodeURIComponent(reviewId)
+            })
+
+                .then(res => res.json())
+
+                .then(data => {
+
+                    if (data.success) {
+
+                        row.remove();
+
+                    } else {
+
+                        alert(data.message || "Failed to delete review.");
+
+                    }
+
+                })
+
+                .catch(() => alert("Failed to delete review. Please try again."));
+
+        });
+
+    });
+
 </script>
 
 </body>

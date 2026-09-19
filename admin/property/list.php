@@ -30,6 +30,10 @@ $destination = $_GET['destination'] ?? "";
 
 $type = $_GET['type'] ?? "";
 
+$perPage = 30;
+
+$page = max(1, (int)($_GET['page'] ?? 1));
+
 
 /*=====================================
 LOAD FILTER DATA
@@ -47,7 +51,98 @@ $types = mysqli_query(
 
 
 /*=====================================
-PROPERTY QUERY
+SHARED WHERE CLAUSE
+=====================================*/
+
+$whereClause = " WHERE 1=1 ";
+
+if ($isRestrictedManager) {
+
+    if (!empty($managerPropertyIds)) {
+
+        $idList = implode(",", array_map("intval", $managerPropertyIds));
+
+        $whereClause .= " AND p.id IN ($idList)";
+
+    } else {
+
+        $whereClause .= " AND p.id = 0";
+
+    }
+
+}
+
+if ($search != "") {
+
+    $searchEscaped = mysqli_real_escape_string($conn, $search);
+
+    $whereClause .= " AND (
+
+        p.title LIKE '%$searchEscaped%'
+
+        OR
+
+        p.property_code LIKE '%$searchEscaped%'
+
+    )";
+}
+
+if ($destination != "") {
+
+    $destination = (int)$destination;
+
+    $whereClause .= " AND p.destination_id=$destination";
+}
+
+if ($type != "") {
+
+    $type = (int)$type;
+
+    $whereClause .= " AND p.property_type_id=$type";
+}
+
+
+/*=====================================
+COUNT + PAGINATION MATH
+=====================================*/
+
+$countSql = "
+
+SELECT COUNT(*) AS total
+
+FROM properties p
+
+INNER JOIN destinations d ON p.destination_id=d.id
+
+INNER JOIN property_types t ON p.property_type_id=t.id
+
+" . $whereClause;
+
+$countResult = mysqli_query($conn, $countSql);
+
+$totalProperties = (int)(mysqli_fetch_assoc($countResult)['total'] ?? 0);
+
+$totalPages = max(1, (int)ceil($totalProperties / $perPage));
+
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+
+$offset = ($page - 1) * $perPage;
+
+function buildPropertyPageUrl($pageNum) {
+
+    $params = $_GET;
+
+    $params['page'] = $pageNum;
+
+    return "list.php?" . http_build_query($params);
+
+}
+
+
+/*=====================================
+PROPERTY QUERY - this page's rows only
 =====================================*/
 
 $sql = "
@@ -84,65 +179,13 @@ INNER JOIN property_types t
 
 ON p.property_type_id=t.id
 
-WHERE 1=1
+" . $whereClause . "
+
+ORDER BY p.created_at DESC
+
+LIMIT $perPage OFFSET $offset
 
 ";
-
-
-/* Managers only ever see the properties assigned to them.
-   If they have none assigned yet, this returns nothing. */
-
-if ($isRestrictedManager) {
-
-    if (!empty($managerPropertyIds)) {
-
-        $idList = implode(",", array_map("intval", $managerPropertyIds));
-
-        $sql .= " AND p.id IN ($idList)";
-
-    } else {
-
-        $sql .= " AND p.id = 0";
-
-    }
-
-}
-
-
-if ($search != "") {
-
-    $search = mysqli_real_escape_string($conn, $search);
-
-    $sql .= " AND (
-
-        p.title LIKE '%$search%'
-
-        OR
-
-        p.property_code LIKE '%$search%'
-
-    )";
-}
-
-
-if ($destination != "") {
-
-    $destination = (int)$destination;
-
-    $sql .= " AND p.destination_id=$destination";
-}
-
-
-if ($type != "") {
-
-    $type = (int)$type;
-
-    $sql .= " AND p.property_type_id=$type";
-}
-
-
-$sql .= " ORDER BY p.created_at DESC";
-
 
 $result = mysqli_query($conn, $sql);
 
@@ -185,13 +228,6 @@ $result = mysqli_query($conn, $sql);
     <div class="container">
 
         <div class="page-header">
-
-        <!-- <a href="../dashboard.php" class="btn-back">
-
-            <i class="fa-solid fa-arrow-left"></i>
-
-            dashboard
-        </a> -->
 
         <h1>Properties</h1>
 
@@ -463,20 +499,21 @@ $result = mysqli_query($conn, $sql);
 
                                     <div class="actions">
 
+                                        
                                         <a
-
                                             href="edit.php?id=<?= $property['id']; ?>"
-
+                                            
                                             class="btn-edit">
-
+                                            
                                             <i class="fa-solid fa-pen"></i>
-
+                                            
                                         </a>
-
+                                        
                                         <?php if (!$isRestrictedManager) { ?>
-
+                                        
+                                        
+                                        
                                             <a
-
                                                 href="delete.php?id=<?= $property['id']; ?>"
 
                                                 class="btn-delete"
@@ -546,7 +583,7 @@ $result = mysqli_query($conn, $sql);
 
                                         </p>
 
-                                        <a
+                                        
 
                                             href="add.php"
 
@@ -577,6 +614,88 @@ $result = mysqli_query($conn, $sql);
             </table>
 
         </div>
+
+        <?php if ($totalPages > 1) { ?>
+
+            <div class="admin-pagination">
+
+                <?php if ($page > 1) { ?>
+
+                    <a href="<?= buildPropertyPageUrl($page - 1); ?>" class="admin-pagination-btn">
+
+                        <i class="fa-solid fa-chevron-left"></i> Previous
+
+                    </a>
+
+                <?php } else { ?>
+
+                    <span class="admin-pagination-btn admin-pagination-disabled">
+
+                        <i class="fa-solid fa-chevron-left"></i> Previous
+
+                    </span>
+
+                <?php } ?>
+
+                <div class="admin-pagination-numbers">
+
+                    <?php
+
+                    $windowStart = max(1, $page - 2);
+
+                    $windowEnd = min($totalPages, $page + 2);
+
+                    if ($windowStart > 1) { ?>
+
+                        <a href="<?= buildPropertyPageUrl(1); ?>" class="admin-pagination-number">1</a>
+
+                        <?php if ($windowStart > 2) { ?>
+                            <span class="admin-pagination-ellipsis">…</span>
+                        <?php } ?>
+
+                    <?php } ?>
+
+                    <?php for ($p = $windowStart; $p <= $windowEnd; $p++) { ?>
+
+                        <a href="<?= buildPropertyPageUrl($p); ?>" class="admin-pagination-number <?= ($p == $page) ? 'active' : ''; ?>"><?= $p; ?></a>
+
+                    <?php } ?>
+
+                    <?php if ($windowEnd < $totalPages) { ?>
+
+                        <?php if ($windowEnd < $totalPages - 1) { ?>
+                            <span class="admin-pagination-ellipsis">…</span>
+                        <?php } ?>
+
+                        <a href="<?= buildPropertyPageUrl($totalPages); ?>" class="admin-pagination-number"><?= $totalPages; ?></a>
+
+                    <?php } ?>
+
+                </div>
+
+                <?php if ($page < $totalPages) { ?>
+
+                    <a href="<?= buildPropertyPageUrl($page + 1); ?>" class="admin-pagination-btn">
+
+                        Next <i class="fa-solid fa-chevron-right"></i>
+
+                    </a>
+
+                <?php } else { ?>
+
+                    <span class="admin-pagination-btn admin-pagination-disabled">
+
+                        Next <i class="fa-solid fa-chevron-right"></i>
+
+                    </span>
+
+                <?php } ?>
+
+            </div>
+
+            <p class="admin-pagination-info">Page <?= $page; ?> of <?= $totalPages; ?> (<?= $totalProperties; ?> total properties)</p>
+
+        <?php } ?>
 
         <?php if (isset($_SESSION['success'])) { ?>
 

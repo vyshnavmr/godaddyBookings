@@ -1,8 +1,8 @@
 <?php
 
-session_start();
-
 require_once "config/db.php";
+
+session_start();
 
 /*====================================================
 GET PROPERTY
@@ -506,7 +506,7 @@ include "includes/header.php";
                                                 value="<?= $room['id']; ?>"
                                                 class="pd-room-radio"
                                                 data-price="<?= $roomFinalPrice; ?>"
-                                                data-max-rooms="<?= max(1, (int)($room['rooms_available'] ?? 1)); ?>"
+                                                data-max-rooms="<?= max(1, (int)($room['total_rooms'] ?? 1)); ?>"
                                                 data-max-guests="<?= max(1, (int)$room['max_guests']); ?>"
                                                 <?= $index === 0 ? 'checked' : ''; ?>>
 
@@ -738,7 +738,7 @@ include "includes/header.php";
 
                         <label>Rooms</label>
 
-                        <?php $maxRoomsAvailable = max(1, (int)($defaultRoomForDropdown['rooms_available'] ?? 1)); ?>
+                        <?php $maxRoomsAvailable = max(1, (int)($defaultRoomForDropdown['total_rooms'] ?? 1)); ?>
 
                         <select form="bookingForm" name="rooms" id="pdRoomsCount">
 

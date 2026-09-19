@@ -1,145 +1,39 @@
 <?php
 
+require_once "config/db.php";
+
 session_start();
 
-require_once "config/db.php";
 
 $token = trim($_GET['token'] ?? "");
 
-$errors = [];
+$validUser = null;
 
-$success = "";
+$formErrors = [];
 
-$resetLink = "";
+if (isset($_SESSION['reset_errors'])) {
 
-$showResetForm = false;
+    $formErrors = $_SESSION['reset_errors'];
 
-
-/*====================================================
-STAGE 1 - REQUEST A RESET (no token in URL)
-====================================================*/
-
-if ($token == "" && $_SERVER["REQUEST_METHOD"] == "POST") {
-
-    $identifier = trim($_POST['identifier'] ?? "");
-
-    if ($identifier == "") {
-
-        $errors[] = "Please enter your email or mobile number.";
-
-    } else {
-
-        $sql = "SELECT * FROM users WHERE email=? OR phone=?";
-
-        $stmt = mysqli_prepare($conn, $sql);
-
-        mysqli_stmt_bind_param($stmt, "ss", $identifier, $identifier);
-
-        mysqli_stmt_execute($stmt);
-
-        $user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
-
-        /* Always show the same message whether or not the account
-           exists, so this can't be used to check which emails/phone
-           numbers are registered. */
-
-        $success = "If an account matches those details, a reset link has been generated below.";
-
-        if ($user) {
-
-            $newToken = bin2hex(random_bytes(32));
-
-            $expiry = date("Y-m-d H:i:s", strtotime("+1 hour"));
-
-            $sql = "UPDATE users SET reset_token=?, reset_token_expiry=? WHERE id=?";
-
-            $stmt = mysqli_prepare($conn, $sql);
-
-            mysqli_stmt_bind_param($stmt, "ssi", $newToken, $expiry, $user['id']);
-
-            mysqli_stmt_execute($stmt);
-
-            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
-
-            $resetLink = $protocol . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/forgot-password.php?token=" . $newToken;
-
-        }
-
-    }
+    unset($_SESSION['reset_errors']);
 
 }
 
+if ($token !== "") {
 
-/*====================================================
-STAGE 2 - SET NEW PASSWORD (token present in URL)
-====================================================*/
+    $hashedToken = hash('sha256', $token);
 
-if ($token != "") {
-
-    $sql = "SELECT * FROM users WHERE reset_token=? AND reset_token_expiry > NOW()";
+    $sql = "SELECT id, name FROM users WHERE reset_token = ? AND reset_token_expiry > NOW()";
 
     $stmt = mysqli_prepare($conn, $sql);
 
-    mysqli_stmt_bind_param($stmt, "s", $token);
+    mysqli_stmt_bind_param($stmt, "s", $hashedToken);
 
     mysqli_stmt_execute($stmt);
 
-    $resetUser = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
-
-    if (!$resetUser) {
-
-        $errors[] = "This reset link is invalid or has expired. Please request a new one.";
-
-    } else {
-
-        $showResetForm = true;
-
-        if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
-            $newPassword = $_POST['new_password'] ?? "";
-
-            $confirmPassword = $_POST['confirm_password'] ?? "";
-
-            if (strlen($newPassword) < 8) {
-
-                $errors[] = "Password must be at least 8 characters.";
-
-            } elseif ($newPassword !== $confirmPassword) {
-
-                $errors[] = "Passwords do not match.";
-
-            } else {
-
-                $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-
-                $sql = "UPDATE users SET password=?, reset_token=NULL, reset_token_expiry=NULL WHERE id=?";
-
-                $stmt = mysqli_prepare($conn, $sql);
-
-                mysqli_stmt_bind_param($stmt, "si", $hashedPassword, $resetUser['id']);
-
-                mysqli_stmt_execute($stmt);
-
-                $_SESSION['login_errors'] = null;
-
-                unset($_SESSION['login_errors']);
-
-                header("Location: login.php?reset=success");
-
-                exit();
-
-            }
-
-        }
-
-    }
+    $validUser = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
 
 }
-
-
-/*====================================================
-RENDER PAGE
-====================================================*/
 
 $pageTitle = "Reset Password - Godaddy Booking";
 
@@ -159,70 +53,53 @@ include "includes/header.php";
 
             <div class="bk-card">
 
-                <div class="bk-card-header">
+                <?php if ($validUser) { ?>
 
-                    <h2><?= $showResetForm ? 'Set a New Password' : 'Forgot Password'; ?></h2>
+                    <div class="bk-card-header">
 
-                </div>
+                        <h2>Set a New Password</h2>
 
-                <div class="bk-card-body">
+                    </div>
 
-                    <?php if (!empty($errors)) { ?>
+                    <div class="bk-card-body">
 
-                        <div class="bk-alert bk-alert-error">
+                        <p class="bk-card-subtitle">Hi <?= htmlspecialchars($validUser['name']); ?>, choose a new password for your account.</p>
 
-                            <ul>
+                        <?php if (!empty($formErrors)) { ?>
 
-                                <?php foreach ($errors as $error) { ?>
+                            <div class="bk-alert bk-alert-error">
 
-                                    <li><?= htmlspecialchars($error); ?></li>
+                                <ul>
 
-                                <?php } ?>
+                                    <?php foreach ($formErrors as $error) { ?>
 
-                            </ul>
+                                        <li><?= htmlspecialchars($error); ?></li>
 
-                        </div>
+                                    <?php } ?>
 
-                    <?php } ?>
+                                </ul>
 
-                    <?php if ($success) { ?>
+                            </div>
 
-                        <div class="bk-alert bk-alert-success"><?= htmlspecialchars($success); ?></div>
+                        <?php } ?>
 
-                    <?php } ?>
+                        <form action="reset-password-save.php" method="POST">
 
-                    <?php if ($resetLink) { ?>
-
-                        <div class="bk-alert bk-alert-info">
-
-                            No email system is connected yet, so here's your reset link directly
-                            (in production this would be emailed instead):
-
-                            <br><br>
-
-                            <a href="<?= htmlspecialchars($resetLink); ?>"><?= htmlspecialchars($resetLink); ?></a>
-
-                        </div>
-
-                    <?php } ?>
-
-                    <?php if ($showResetForm) { ?>
-
-                        <form action="forgot-password.php?token=<?= htmlspecialchars($token); ?>" method="POST">
+                            <input type="hidden" name="token" value="<?= htmlspecialchars($token); ?>">
 
                             <div class="bk-form-group">
 
                                 <label>New Password</label>
 
-                                <input type="password" name="new_password" placeholder="At least 8 characters" minlength="8" required>
+                                <input type="password" name="new_password" placeholder="Create a password" minlength="8" required>
 
                             </div>
 
                             <div class="bk-form-group">
 
-                                <label>Confirm New Password</label>
+                                <label>Confirm Password</label>
 
-                                <input type="password" name="confirm_password" placeholder="Re-enter new password" minlength="8" required>
+                                <input type="password" name="confirm_password" placeholder="Re-enter your password" minlength="8" required>
 
                             </div>
 
@@ -230,33 +107,29 @@ include "includes/header.php";
 
                         </form>
 
-                    <?php } elseif (!$token) { ?>
+                    </div>
 
-                        <p class="bk-card-subtitle">Enter your email or mobile number and we'll generate a reset link.</p>
+                <?php } else { ?>
 
-                        <form action="forgot-password.php" method="POST">
+                    <div class="bk-card-header">
 
-                            <div class="bk-form-group">
+                        <h2>Link Invalid or Expired</h2>
 
-                                <label>Email or Mobile Number</label>
+                    </div>
 
-                                <input type="text" name="identifier" placeholder="name@abc.com or 10-digit number" required>
+                    <div class="bk-card-body" style="text-align:center;">
 
-                            </div>
+                        <p class="bk-card-subtitle">This password reset link is invalid or has expired. Reset links are only valid for 10 minutes.</p>
 
-                            <button type="submit" class="bk-submit-btn">Send Reset Link</button>
+                        <a href="account-recovery.php" class="bk-submit-btn" style="display:inline-block; text-decoration:none; width:auto; padding:14px 32px;">
 
-                        </form>
+                            Contact Us for Help
 
-                    <?php } ?>
+                        </a>
 
-                    <p class="bk-login-prompt bk-no-border">
+                    </div>
 
-                        <a href="login.php">Back to Log In</a>
-
-                    </p>
-
-                </div>
+                <?php } ?>
 
             </div>
 

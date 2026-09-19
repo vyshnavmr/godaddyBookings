@@ -213,6 +213,7 @@ $amenityQuery = mysqli_query($conn, "SELECT * FROM amenities ORDER BY amenity_na
 
                     <select
                         name="property_type_id"
+                        id="propertyTypeSelect"
                         required>
 
                         <option value="">Choose Property Type</option>
@@ -228,7 +229,21 @@ $amenityQuery = mysqli_query($conn, "SELECT * FROM amenities ORDER BY amenity_na
 
                         <?php } ?>
 
+                        <option value="new">+ Add New Property Type</option>
+
                     </select>
+
+                    <div id="newPropertyTypeWrap" style="display:none; margin-top:10px;">
+
+                        <input
+                            type="text"
+                            name="new_property_type_name"
+                            id="newPropertyTypeInput"
+                            placeholder="Enter new property type name">
+
+                        <small class="hint">This will be added to the property types list automatically when you save.</small>
+
+                    </div>
 
                 </div>
 
@@ -482,18 +497,33 @@ $amenityQuery = mysqli_query($conn, "SELECT * FROM amenities ORDER BY amenity_na
 
             <h2>Property Manager (Optional)</h2>
 
-            <div class="form-group">
+            <div class="row">
 
-                <label>Manager Email</label>
+                <div class="form-group">
 
-                <input
-                    type="email"
-                    name="manager_email"
-                    placeholder="manager@example.com">
+                    <label>Manager Email</label>
 
-                <small class="hint">If provided, a manager login will be created automatically with a random password. You can leave this blank and add it later.</small>
+                    <input
+                        type="email"
+                        name="manager_email"
+                        placeholder="manager@example.com">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Manager Phone</label>
+
+                    <input
+                        type="tel"
+                        name="manager_phone"
+                        placeholder="10-digit mobile number">
+
+                </div>
 
             </div>
+
+            <small class="hint">If an email is provided, a manager login will be created automatically with a random password. Phone number is optional and used for contact purposes.</small>
 
         </div>
 
@@ -682,6 +712,27 @@ $amenityQuery = mysqli_query($conn, "SELECT * FROM amenities ORDER BY amenity_na
             newDestinationWrap.style.display = "none";
             newDestinationInput.required = false;
             newDestinationInput.value = "";
+
+        }
+
+    });
+
+        const propertyTypeSelect = document.getElementById("propertyTypeSelect");
+    const newPropertyTypeWrap = document.getElementById("newPropertyTypeWrap");
+    const newPropertyTypeInput = document.getElementById("newPropertyTypeInput");
+
+    propertyTypeSelect.addEventListener("change", function () {
+
+        if (this.value === "new") {
+
+            newPropertyTypeWrap.style.display = "block";
+            newPropertyTypeInput.required = true;
+
+        } else {
+
+            newPropertyTypeWrap.style.display = "none";
+            newPropertyTypeInput.required = false;
+            newPropertyTypeInput.value = "";
 
         }
 

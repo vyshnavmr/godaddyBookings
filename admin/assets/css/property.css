@@ -173,6 +173,8 @@ textarea:focus{
 
     grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 
+    grid-auto-rows:1fr;
+
     gap:15px;
 
 }
@@ -196,6 +198,8 @@ textarea:focus{
     cursor:pointer;
 
     transition:.3s;
+
+    min-height:52px;
 
 }
 

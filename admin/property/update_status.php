@@ -61,7 +61,10 @@ if (!in_array($value, $allowedFields[$field])) {
 
 
 /*====================================================
-CHECK BOOKING EXISTS + WHICH PROPERTY IT BELONGS TO
+FETCH THE FULL BOOKING - not just property_id, since a
+booking_status change to/from Cancelled needs room_id,
+rooms, and the CURRENT status to decide whether to
+restock or un-restock property_rooms.rooms_available
 ====================================================*/
 
 $sql = "SELECT property_id FROM bookings WHERE id=?";
@@ -114,27 +117,41 @@ directly from user input, so this stays injection-safe
 even though it can't be a bound parameter
 ====================================================*/
 
-if ($field === "booking_status") {
+mysqli_begin_transaction($conn);
 
-    $sql = "UPDATE bookings SET booking_status=? WHERE id=?";
+try {
 
-} else {
+    if ($field === "booking_status") {
 
-    $sql = "UPDATE bookings SET payment_status=? WHERE id=?";
+        $sql = "UPDATE bookings SET booking_status=? WHERE id=?";
 
-}
+    } else {
 
-$stmt = mysqli_prepare($conn, $sql);
+        $sql = "UPDATE bookings SET payment_status=? WHERE id=?";
 
-mysqli_stmt_bind_param($stmt, "si", $value, $booking_id);
+    }
 
-if (mysqli_stmt_execute($stmt)) {
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param($stmt, "si", $value, $booking_id);
+
+    if (!mysqli_stmt_execute($stmt)) {
+
+        throw new Exception("Database error while updating.");
+
+    }
+
+    mysqli_commit($conn);
 
     echo json_encode(["success" => true]);
 
-} else {
+}
 
-    echo json_encode(["success" => false, "message" => "Database error while updating."]);
+catch (Exception $e) {
+
+    mysqli_rollback($conn);
+
+    echo json_encode(["success" => false, "message" => $e->getMessage()]);
 
 }
 

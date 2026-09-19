@@ -169,36 +169,35 @@ include "includes/header.php";
 <?php if (isset($_GET['booking_confirmed']) && $_GET['booking_confirmed'] == '1') { ?>
 
     <div class="bkc-overlay" id="bkcOverlay">
-
         <div class="bkc-modal">
-
+            
             <button type="button" class="bkc-close" id="bkcClose" aria-label="Close">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-
+            
             <div class="bkc-icon">
                 <i class="fa-solid fa-circle-check"></i>
             </div>
-
+            
             <h2>Thank You for Your Booking!</h2>
-
+            
             <p>Our executive will contact you shortly to confirm the details.</p>
-
+            
             <p class="bkc-call-note">Need to speak to us right away?</p>
-
+            
             <a href="tel:+919895928883" class="bkc-call-btn">
                 <i class="fa-solid fa-phone"></i>
                 Call +91 98959 28883
             </a>
-
+            
         </div>
-
+        
     </div>
-
-<?php } ?>
-
+    
+    <?php } ?>
+    
     <!-- ================= HERO ================= -->
-
+    
     <section class="hero">
         <div class="slides">
             <div class="slide active">
@@ -207,14 +206,14 @@ include "includes/header.php";
             <div class="slide">
                 <img src="https://picsum.photos/1600/900?random=22">
             </div>
-
+            
             <div class="slide">
                 <img src="https://picsum.photos/1600/900?random=23">
             </div>
         </div>
-
+        
         <div class="overlay"></div>
-
+        
         <div class="hero-content">
             <h1>
                 Discover Your Perfect Stay
@@ -222,15 +221,15 @@ include "includes/header.php";
             <p>
                 Luxury Resorts • Villas • Homestays • Cottages
             </p>
-
+            
             <div class="search-box" id="search-box">
                 <input
-                    type="text"
-                    id="heroDestination"
-                    placeholder="Destination">
+                type="text"
+                id="heroDestination"
+                placeholder="Destination">
                 <input
-                    type="date"
-                    id="heroCheckIn">
+                type="date"
+                id="heroCheckIn">
                 <input
                     type="date"
                     id="heroCheckOut">

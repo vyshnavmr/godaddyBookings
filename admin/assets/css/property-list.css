@@ -580,3 +580,77 @@ tbody tr:hover{
     /* background:#334155; */
     transform:translateY(-2px);
 }
+
+.admin-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+.admin-pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid #ddd;
+    color: #333;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.admin-pagination-btn:hover {
+    border-color: #4a6cf7;
+    color: #4a6cf7;
+}
+
+.admin-pagination-disabled {
+    opacity: .4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.admin-pagination-numbers {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.admin-pagination-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    color: #666;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.admin-pagination-number:hover {
+    background: #f0f4ff;
+}
+
+.admin-pagination-number.active {
+    background: #4a6cf7;
+    color: #fff;
+}
+
+.admin-pagination-ellipsis {
+    color: #aaa;
+    padding: 0 4px;
+}
+
+.admin-pagination-info {
+    text-align: center;
+    color: #888;
+    font-size: 13px;
+    margin-top: 10px;
+}

@@ -1,8 +1,9 @@
 <?php
 
+require_once "config/db.php";
+
 session_start();
 
-require_once "config/db.php";
 
 /*====================================================
 ALREADY LOGGED IN?
@@ -126,7 +127,7 @@ include "includes/header.php";
 
                         <p class="bk-forgot-link">
 
-                            <a href="forgot-password.php">Forgot your password?</a>
+                            <a href="account-recovery.php">Forgot your password?</a>
 
                         </p>
 

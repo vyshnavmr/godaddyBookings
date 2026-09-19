@@ -242,26 +242,6 @@ Properties
 
 </a>
 
-<!-- <a
-href="/WEBSITE/admin/destination/list.php"
-class="<?= ($currentPage=="destinations") ? "active" : ""; ?>">
-
-<i class="fa-solid fa-location-dot"></i>
-
-Destinations
-
-</a> -->
-
-<!-- <a
-href="/WEBSITE/admin/property_type/list.php"
-class="<?= ($currentPage=="property_types") ? "active" : ""; ?>">
-
-<i class="fa-solid fa-building"></i>
-
-Property Types
-
-</a> -->
-
 <a
 href="/WEBSITE/admin/property/rooms.php"
 class="<?= ($currentPage=="rooms") ? "active" : ""; ?>">
@@ -272,6 +252,7 @@ class="<?= ($currentPage=="rooms") ? "active" : ""; ?>">
 Add rooms
 
 </a>
+
 
 <a
 href="/WEBSITE/admin/property/bookings.php"
@@ -285,13 +266,35 @@ Bookings
 
 <?php if (!isset($_SESSION['is_manager']) || (int)$_SESSION['is_manager'] === 0) { ?>
 
+
+
+<a
+href="/WEBSITE/admin/property/destinations.php"
+class="<?= ($currentPage=="destinations") ? "active" : ""; ?>">
+
+<i class="fa-solid fa-location-dot"></i>
+
+Destinations
+
+</a>
+
 <a
 href="/WEBSITE/admin/property/manager_list.php"
-class="<?= ($currentPage=="users") ? "active" : ""; ?>">
+class="<?= ($currentPage=="managers") ? "active" : ""; ?>">
 
 <i class="fa-solid fa-users"></i>
 
 Managers
+
+</a>
+
+<a
+href="/WEBSITE/admin/property/user_list.php"
+class="<?= ($currentPage=="registered_users") ? "active" : ""; ?>">
+
+<i class="fa-solid fa-user-group"></i>
+
+Users
 
 </a>
 

@@ -357,7 +357,7 @@ include "includes/header.php";
 
                             <label>Rooms</label>
 
-                            <?php $roomMaxRoomsAvailable = max(1, (int)($room['rooms_available'] ?? 1)); ?>
+                            <?php $roomMaxRoomsAvailable = max(1, (int)($room['total_rooms'] ?? 1)); ?>
 
                             <select name="rooms" id="rdRoomsCount">
 

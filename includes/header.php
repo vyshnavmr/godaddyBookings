@@ -111,10 +111,10 @@ if (isset($conn)) {
     <!-- ================= NAVBAR ================= -->
         <header class="<?= ($currentPage != 'home' || isset($_GET['booking_confirmed'])) ? 'header-solid' : ''; ?>">
         <div class="container nav-container">
-            <div class="logo">
+            <a href="index.php" class="logo">
                 <img src="assets/images/logo-mb.png" alt="">
                 <h2>GodaddyBooking</h2>
-            </div>
+            </a>
 
             <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
                 <i class="fa-solid fa-bars"></i>
@@ -159,7 +159,7 @@ if (isset($conn)) {
                     <?php if (isset($_SESSION['user_id'])) { ?>
 
                         <a href="current-booking.php" class="<?= ($currentPage == 'my-bookings') ? 'active' : ''; ?>">My Bookings</a>
-
+                        <a href="account-settings.php" class="<?= ($currentPage == 'account-settings') ? 'active' : ''; ?>">Account Settings</a>
                     <?php } ?>
 
                 </nav>

@@ -33,8 +33,11 @@ $id                  = (int)$_POST['id'];
 $property_code       = trim($_POST['property_code']);
 $title               = trim($_POST['title']);
 
-$destination_id      = (int)$_POST['destination_id'];
-$property_type_id    = (int)$_POST['property_type_id'];
+$destination_id_raw  = $_POST['destination_id'] ?? "";
+$new_destination_name = trim($_POST['new_destination_name'] ?? "");
+
+$property_type_id_raw = $_POST['property_type_id'] ?? "";
+$new_property_type_name = trim($_POST['new_property_type_name'] ?? "");
 
 $description         = trim($_POST['description']);
 $address             = trim($_POST['address']);
@@ -81,11 +84,29 @@ if ($property_code == "")
 if ($title == "")
     $errors[] = "Property Name is required.";
 
-if ($destination_id <= 0)
+if ($destination_id_raw === "new") {
+
+    if ($new_destination_name === "") {
+        $errors[] = "Please enter a name for the new destination.";
+    }
+
+} elseif ((int)$destination_id_raw <= 0) {
+
     $errors[] = "Select Destination.";
 
-if ($property_type_id <= 0)
+}
+
+if ($property_type_id_raw === "new") {
+
+    if ($new_property_type_name === "") {
+        $errors[] = "Please enter a name for the new property type.";
+    }
+
+} elseif ((int)$property_type_id_raw <= 0) {
+
     $errors[] = "Select Property Type.";
+
+}
 
 if ($price <= 0)
     $errors[] = "Price must be greater than zero.";
@@ -103,6 +124,187 @@ if (count($errors) > 0) {
 
 }
 
+/*====================================================
+RESOLVE DESTINATION - either an existing id from the
+dropdown, or a brand-new destination typed in by the admin
+====================================================*/
+
+if ($destination_id_raw === "new") {
+
+    /* Normalize before comparing/storing - trims whitespace,
+       strips trailing punctuation like a stray comma or period,
+       and collapses repeated spaces. */
+
+    $new_destination_name = trim($new_destination_name);
+
+    $new_destination_name = rtrim($new_destination_name, " ,.-");
+
+    $new_destination_name = preg_replace('/\s+/', ' ', $new_destination_name);
+
+    if ($new_destination_name === "") {
+
+        $_SESSION['errors'][] = "Please enter a valid destination name.";
+
+        header("Location: edit.php?id=" . $id);
+
+        exit();
+
+    }
+
+    $sql = "SELECT id FROM destinations WHERE LOWER(destination_name) = LOWER(?)";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param($stmt, "s", $new_destination_name);
+
+    mysqli_stmt_execute($stmt);
+
+    $existingDestination = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+
+    if ($existingDestination) {
+
+        $destination_id = (int)$existingDestination['id'];
+
+    } else {
+
+        /* Same space-insensitive near-match check as save.php */
+
+        $strippedNewName = str_replace(' ', '', strtolower($new_destination_name));
+
+        $sql = "SELECT id, destination_name FROM destinations";
+
+        $allDestResult = mysqli_query($conn, $sql);
+
+        while ($existingRow = mysqli_fetch_assoc($allDestResult)) {
+
+            $strippedExisting = str_replace(' ', '', strtolower($existingRow['destination_name']));
+
+            if ($strippedExisting === $strippedNewName) {
+
+                $_SESSION['errors'][] = "A very similar destination already exists: \"" . htmlspecialchars($existingRow['destination_name']) . "\". Please select it from the dropdown instead of creating a new one.";
+
+                header("Location: edit.php?id=" . $id);
+
+                exit();
+
+            }
+
+        }
+
+        $sql = "INSERT INTO destinations(destination_name, is_active) VALUES(?, 1)";
+
+        $stmt = mysqli_prepare($conn, $sql);
+
+        mysqli_stmt_bind_param($stmt, "s", $new_destination_name);
+
+        if (!mysqli_stmt_execute($stmt)) {
+
+            $_SESSION['errors'][] = "Failed to create the new destination.";
+
+            header("Location: edit.php?id=" . $id);
+
+            exit();
+
+        }
+
+        $destination_id = mysqli_insert_id($conn);
+
+    }
+
+} else {
+
+    $destination_id = (int)$destination_id_raw;
+
+}
+
+/*====================================================
+RESOLVE PROPERTY TYPE - either an existing id from the
+dropdown, or a brand-new type typed in by the admin
+====================================================*/
+
+if ($property_type_id_raw === "new") {
+
+    $new_property_type_name = trim($new_property_type_name);
+
+    $new_property_type_name = rtrim($new_property_type_name, " ,.-");
+
+    $new_property_type_name = preg_replace('/\s+/', ' ', $new_property_type_name);
+
+    if ($new_property_type_name === "") {
+
+        $_SESSION['errors'][] = "Please enter a valid property type name.";
+
+        header("Location: edit.php?id=" . $id);
+
+        exit();
+
+    }
+
+    $sql = "SELECT id FROM property_types WHERE LOWER(type_name) = LOWER(?)";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param($stmt, "s", $new_property_type_name);
+
+    mysqli_stmt_execute($stmt);
+
+    $existingType = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+
+    if ($existingType) {
+
+        $property_type_id = (int)$existingType['id'];
+
+    } else {
+
+        /* Same space-insensitive near-match check as save.php */
+
+        $strippedNewName = str_replace(' ', '', strtolower($new_property_type_name));
+
+        $sql = "SELECT id, type_name FROM property_types";
+
+        $allTypesResult = mysqli_query($conn, $sql);
+
+        while ($existingRow = mysqli_fetch_assoc($allTypesResult)) {
+
+            $strippedExisting = str_replace(' ', '', strtolower($existingRow['type_name']));
+
+            if ($strippedExisting === $strippedNewName) {
+
+                $_SESSION['errors'][] = "A very similar property type already exists: \"" . htmlspecialchars($existingRow['type_name']) . "\". Please select it from the dropdown instead of creating a new one.";
+
+                header("Location: edit.php?id=" . $id);
+
+                exit();
+
+            }
+
+        }
+
+        $sql = "INSERT INTO property_types(type_name, is_active) VALUES(?, 1)";
+
+        $stmt = mysqli_prepare($conn, $sql);
+
+        mysqli_stmt_bind_param($stmt, "s", $new_property_type_name);
+
+        if (!mysqli_stmt_execute($stmt)) {
+
+            $_SESSION['errors'][] = "Failed to create the new property type.";
+
+            header("Location: edit.php?id=" . $id);
+
+            exit();
+
+        }
+
+        $property_type_id = mysqli_insert_id($conn);
+
+    }
+
+} else {
+
+    $property_type_id = (int)$property_type_id_raw;
+
+}
 
 /*====================================================
 FETCH EXISTING PROPERTY
@@ -629,17 +831,27 @@ try {
 
         $manager_email = trim($_POST['manager_email'] ?? "");
 
+        $manager_phone = trim($_POST['manager_phone'] ?? "");
+
         if ($manager_email != "" && !filter_var($manager_email, FILTER_VALIDATE_EMAIL)) {
 
             throw new Exception("Manager Email is not a valid email address.");
 
         }
 
+        if ($manager_phone != "" && !preg_match('/^[0-9]{10}$/', $manager_phone)) {
+
+            throw new Exception("Manager Phone must be a valid 10-digit number.");
+
+        }
+
         if ($manager_email != "") {
 
-            /* Who currently manages THIS property, if anyone */
+            /* Who currently manages THIS property, if anyone - now also
+               pulling their current phone, so we can detect a phone-only
+               change and not just an email change. */
 
-            $sql = "SELECT a.id, a.email
+            $sql = "SELECT a.id, a.email, a.phone
                     FROM property_managers pm
                     INNER JOIN admins a ON pm.admin_id = a.id
                     WHERE pm.property_id = ?
@@ -655,9 +867,29 @@ try {
 
             $currentManager = mysqli_fetch_assoc($managerResult);
 
-            /* Only touch anything if the email actually changed */
+            $emailChanged = !$currentManager || $currentManager['email'] !== $manager_email;
 
-            if (!$currentManager || $currentManager['email'] !== $manager_email) {
+            $phoneChanged = $currentManager && (($currentManager['phone'] ?? '') !== $manager_phone);
+
+            /* If neither changed, there's genuinely nothing to do here -
+               but if the email is the same and ONLY the phone changed,
+               just update the phone directly without touching the
+               property_managers link at all (no need to re-link anything
+               when the manager themselves hasn't changed). */
+
+            if ($currentManager && !$emailChanged && $phoneChanged) {
+
+                $sql = "UPDATE admins SET phone = ? WHERE id = ?";
+
+                $stmt = mysqli_prepare($conn, $sql);
+
+                mysqli_stmt_bind_param($stmt, "si", $manager_phone, $currentManager['id']);
+
+                mysqli_stmt_execute($stmt);
+
+            }
+
+            if ($emailChanged) {
 
                 /* Does an account with this email already exist? */
 
@@ -681,9 +913,19 @@ try {
 
                 if ($existingAccount) {
 
-                    /* Reuse the existing manager account - same login, same password */
+                    /* Reuse the existing manager account - same login, same password.
+                       Still update their phone number here, since that's a detail
+                       an admin might legitimately want to correct/update. */
 
                     $target_manager_id = (int)$existingAccount['id'];
+
+                    $sql = "UPDATE admins SET phone = ? WHERE id = ?";
+
+                    $stmt = mysqli_prepare($conn, $sql);
+
+                    mysqli_stmt_bind_param($stmt, "si", $manager_phone, $target_manager_id);
+
+                    mysqli_stmt_execute($stmt);
 
                 } else {
 
@@ -697,8 +939,8 @@ try {
 
                     $encrypted_password = encryptManagerPassword($plain_password);
 
-                    $sql = "INSERT INTO admins(name, email, password, encrypted_password, is_manager)
-                            VALUES(?,?,?,?,1)";
+                    $sql = "INSERT INTO admins(name, email, phone, password, encrypted_password, is_manager)
+                            VALUES(?,?,?,?,?,1)";
 
                     $stmt = mysqli_prepare($conn, $sql);
 
@@ -706,11 +948,13 @@ try {
 
                         $stmt,
 
-                        "ssss",
+                        "sssss",
 
                         $manager_name,
 
                         $manager_email,
+
+                        $manager_phone,
 
                         $hashed_password,
 

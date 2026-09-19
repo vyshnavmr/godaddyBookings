@@ -1,2 +1,35 @@
 # Custom 404 error page
 ErrorDocument 404 /WEBSITE/404.php
+
+# Custom 500 error page
+ErrorDocument 500 /WEBSITE/500.php
+
+# Block direct access to the config folder - db.php should
+# only ever be included by other PHP files, never loaded
+# directly in a browser
+<IfModule mod_authz_core.c>
+    <Directory "config">
+        Require all denied
+    </Directory>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <Directory "config">
+        Order allow,deny
+        Deny from all
+    </Directory>
+</IfModule>
+
+# Block direct access to the error log
+<Files "error_log.txt">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>
+
+# Disable directory listing - stops someone from browsing
+# yoursite.com/assets/uploads/ and seeing every file in it
+Options -Indexes

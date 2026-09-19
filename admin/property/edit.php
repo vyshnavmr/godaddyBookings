@@ -267,6 +267,7 @@ while ($row = mysqli_fetch_assoc($imagesResult)) {
 
                     <select
                         name="destination_id"
+                        id="destinationSelect"
                         required>
 
                         <option value="">Choose Destination</option>
@@ -283,7 +284,21 @@ while ($row = mysqli_fetch_assoc($imagesResult)) {
 
                         <?php } ?>
 
+                        <option value="new">+ Add New Destination</option>
+
                     </select>
+
+                    <div id="newDestinationWrap" style="display:none; margin-top:10px;">
+
+                        <input
+                            type="text"
+                            name="new_destination_name"
+                            id="newDestinationInput"
+                            placeholder="Enter new destination name">
+
+                        <small class="hint">This will be added to the destinations list automatically when you save.</small>
+
+                    </div>
 
                 </div>
 
@@ -293,6 +308,7 @@ while ($row = mysqli_fetch_assoc($imagesResult)) {
 
                     <select
                         name="property_type_id"
+                        id="propertyTypeSelect"
                         required>
 
                         <option value="">Choose Property Type</option>
@@ -309,7 +325,21 @@ while ($row = mysqli_fetch_assoc($imagesResult)) {
 
                         <?php } ?>
 
+                        <option value="new">+ Add New Property Type</option>
+
                     </select>
+
+                    <div id="newPropertyTypeWrap" style="display:none; margin-top:10px;">
+
+                        <input
+                            type="text"
+                            name="new_property_type_name"
+                            id="newPropertyTypeInput"
+                            placeholder="Enter new property type name">
+
+                        <small class="hint">This will be added to the property types list automatically when you save.</small>
+
+                    </div>
 
                 </div>
 
@@ -568,28 +598,45 @@ while ($row = mysqli_fetch_assoc($imagesResult)) {
 
             <h2>Property Manager</h2>
 
-            <div class="form-group">
+            <div class="row">
 
-                <label>Manager Email</label>
+                <div class="form-group">
 
-                <input
-                    type="email"
-                    name="manager_email"
-                    value="<?= htmlspecialchars($manager['email'] ?? ''); ?>"
-                    placeholder="manager@example.com"
-                    <?= $isRestrictedManager ? 'disabled' : ''; ?>>
+                    <label>Manager Email</label>
 
-                <?php if ($isRestrictedManager) { ?>
+                    <input
+                        type="email"
+                        name="manager_email"
+                        value="<?= htmlspecialchars($manager['email'] ?? ''); ?>"
+                        placeholder="manager@example.com"
+                        <?= $isRestrictedManager ? 'disabled' : ''; ?>>
 
-                    <small class="hint">Only administrators can change the manager email.</small>
+                </div>
 
-                <?php } else { ?>
+                <div class="form-group">
 
-                    <small class="hint"><?= $manager ? 'A manager account already exists for this email.' : 'Leave blank if this property has no manager yet, or add one now.'; ?></small>
+                    <label>Manager Phone</label>
 
-                <?php } ?>
+                    <input
+                        type="tel"
+                        name="manager_phone"
+                        value="<?= htmlspecialchars($manager['phone'] ?? ''); ?>"
+                        placeholder="10-digit mobile number"
+                        <?= $isRestrictedManager ? 'disabled' : ''; ?>>
+
+                </div>
 
             </div>
+
+            <?php if ($isRestrictedManager) { ?>
+
+                <small class="hint">Only administrators can change manager details.</small>
+
+            <?php } else { ?>
+
+                <small class="hint"><?= $manager ? 'A manager account already exists for this email.' : 'Leave blank if this property has no manager yet, or add one now.'; ?></small>
+
+            <?php } ?>
 
         </div>
 
@@ -740,7 +787,7 @@ while ($row = mysqli_fetch_assoc($imagesResult)) {
 
         <div class="submit-area">
 
-            <a href="list.php" class="btn-cancel">Cancel</a>
+            <a href="list.php" class="btn-cancel" id="cancelBtn">Cancel</a>
 
             <button
                 class="btn-save"
@@ -797,6 +844,49 @@ while ($row = mysqli_fetch_assoc($imagesResult)) {
 
     document.getElementById("priceInput").addEventListener("input", updateDiscountPreview);
     document.getElementById("discountInput").addEventListener("input", updateDiscountPreview);
+
+        const destinationSelect = document.getElementById("destinationSelect");
+    const newDestinationWrap = document.getElementById("newDestinationWrap");
+    const newDestinationInput = document.getElementById("newDestinationInput");
+
+    destinationSelect.addEventListener("change", function () {
+
+        if (this.value === "new") {
+
+            newDestinationWrap.style.display = "block";
+            newDestinationInput.required = true;
+
+        } else {
+
+            newDestinationWrap.style.display = "none";
+            newDestinationInput.required = false;
+            newDestinationInput.value = "";
+
+        }
+
+    });
+
+        const propertyTypeSelect = document.getElementById("propertyTypeSelect");
+    const newPropertyTypeWrap = document.getElementById("newPropertyTypeWrap");
+    const newPropertyTypeInput = document.getElementById("newPropertyTypeInput");
+
+    propertyTypeSelect.addEventListener("change", function () {
+
+        if (this.value === "new") {
+
+            newPropertyTypeWrap.style.display = "block";
+            newPropertyTypeInput.required = true;
+
+        } else {
+
+            newPropertyTypeWrap.style.display = "none";
+            newPropertyTypeInput.required = false;
+            newPropertyTypeInput.value = "";
+
+        }
+
+    });
+
 </script>
 
 </body>

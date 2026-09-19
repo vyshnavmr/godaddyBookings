@@ -1,8 +1,9 @@
 <?php
 
+require_once "config/db.php";
+
 session_start();
 
-require_once "config/db.php";
 
 /*====================================================
 REQUIRE LOGIN
@@ -316,6 +317,12 @@ include "includes/header.php";
                                         </a>
 
                                     <?php } ?>
+
+                                    <a href="javascript:void(0);" onclick="window.open('booking-receipt.php?id=<?= (int)$booking['id']; ?>', '_blank', 'noopener'); return false;" class="mb-view-link">
+
+                                        View Receipt <i class="fa-solid fa-receipt"></i>
+
+                                    </a>
 
                                 </div>
 
