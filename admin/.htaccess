@@ -1,0 +1,90 @@
+# =========================================================
+# ADMIN PANEL .htaccess
+# =========================================================
+
+RewriteEngine On
+
+# ---------------------------------------------------------
+# 1. Force HTTPS
+# ---------------------------------------------------------
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+
+# ---------------------------------------------------------
+# 2. Disable directory listing
+# ---------------------------------------------------------
+Options -Indexes
+
+
+# ---------------------------------------------------------
+# 3. Protect sensitive files
+# ---------------------------------------------------------
+
+# Block access to .env and other hidden files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Block direct access to configuration files
+<FilesMatch "^(db|crypto|config)\.php$">
+    Require all denied
+</FilesMatch>
+
+# Block backup/source files
+<FilesMatch "\.(bak|backup|old|orig|save|swp|sql|log|ini)$">
+    Require all denied
+</FilesMatch>
+
+
+# ---------------------------------------------------------
+# 4. Protect sensitive directories
+# ---------------------------------------------------------
+
+<IfModule mod_authz_core.c>
+
+    <DirectoryMatch ".*/(config|includes)/">
+        Require all denied
+    </DirectoryMatch>
+
+</IfModule>
+
+
+# ---------------------------------------------------------
+# 5. Prevent PHP execution in upload directories
+# ---------------------------------------------------------
+
+<DirectoryMatch ".*/(uploads|images)/">
+    <FilesMatch "\.php$">
+        Require all denied
+    </FilesMatch>
+</DirectoryMatch>
+
+
+# ---------------------------------------------------------
+# 6. Security headers
+# ---------------------------------------------------------
+
+<IfModule mod_headers.c>
+
+    Header always set X-Content-Type-Options "nosniff"
+
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+</IfModule>
+
+
+# ---------------------------------------------------------
+# 7. Disable access to server information
+# ---------------------------------------------------------
+
+ServerSignature Off
+
+
+# ---------------------------------------------------------
+# END
+# ---------------------------------------------------------
